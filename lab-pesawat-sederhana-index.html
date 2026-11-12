@@ -1,0 +1,951 @@
+<title>Lab Pesawat Sederhana</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600&family=Lexend:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Konsep tata letak: lembar kerja laboratorium di atas kertas berpetak. Panggung simulasi di kiri, hasil ukur dan rumus di kanan; bertumpuk di HP. Warna peran tetap: tumpu = ungu, beban = oranye, kuasa = hijau toska. */
+:root{
+  --font-display:'Lexend','Segoe UI',system-ui,sans-serif;
+  --font-body:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  --bg:#EDF2F5; --grid:#DDE6EC; --paper:#FFFFFF; --fg:#12212B; --muted:#4A5E6C; --line:#C7D4DC;
+  --brand:#0D5F80; --brand-soft:#D9EBF3; --on-solid:#FFFFFF;
+  --tumpu:#5B3FCC; --tumpu-soft:#E5DFFA;
+  --beban:#A84A0B; --beban-soft:#FAE5D3;
+  --kuasa:#076B64; --kuasa-soft:#D1EFEA;
+  --ok:#17703A; --ok-soft:#DBF1E2; --bad:#B02A22; --bad-soft:#FADFDB;
+  --wood:#C29359; --wood2:#8F6531; --metal:#7C909F; --ground:#CBD7DE; --skin:#E9B999; --soil:#8A6A47; --glass:#BFDDE9;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0C171E; --grid:#14252F; --paper:#14232C; --fg:#E7EFF4; --muted:#9DB2C0; --line:#2A3F4C;
+    --brand:#6DC3E4; --brand-soft:#17384A; --on-solid:#0C171E;
+    --tumpu:#B7A8FF; --tumpu-soft:#2A2457; --beban:#FFA867; --beban-soft:#4A2B13; --kuasa:#4FD3C6; --kuasa-soft:#0E3F3B;
+    --ok:#6FD58F; --ok-soft:#133A22; --bad:#FF8B80; --bad-soft:#4A1B17;
+    --wood:#B58850; --wood2:#8A6535; --metal:#8EA2B1; --ground:#2B404D; --skin:#D9A987; --soil:#A68562; --glass:#24566B;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0C171E; --grid:#14252F; --paper:#14232C; --fg:#E7EFF4; --muted:#9DB2C0; --line:#2A3F4C;
+  --brand:#6DC3E4; --brand-soft:#17384A; --on-solid:#0C171E;
+  --tumpu:#B7A8FF; --tumpu-soft:#2A2457; --beban:#FFA867; --beban-soft:#4A2B13; --kuasa:#4FD3C6; --kuasa-soft:#0E3F3B;
+  --ok:#6FD58F; --ok-soft:#133A22; --bad:#FF8B80; --bad-soft:#4A1B17;
+  --wood:#B58850; --wood2:#8A6535; --metal:#8EA2B1; --ground:#2B404D; --skin:#D9A987; --soil:#A68562; --glass:#24566B;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{font-size:16px}
+:root.big{font-size:20px}
+body{background-color:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:1rem;line-height:1.55;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--font-display);font-weight:600;line-height:1.2;margin:0;text-wrap:balance}
+h1{font-size:clamp(1.45rem,1.05rem + 1.7vw,2.1rem)}
+h2{font-size:1.2rem}
+h3{font-size:1rem}
+p{margin:0}
+.eyebrow{font:600 .78rem var(--font-body);letter-spacing:.08em;text-transform:uppercase;color:var(--brand)}
+.lead{max-width:65ch;color:var(--muted);font-size:1.05rem}
+.muted{color:var(--muted)}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+
+/* header */
+.hd{position:sticky;top:env(safe-area-inset-top,0px);z-index:11;background:var(--paper);border-bottom:1px solid var(--line)}
+.hd-row{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding-block:.6rem}
+.brand{display:flex;align-items:center;gap:.65rem;min-width:0}
+.brand-t{font:600 1.05rem var(--font-display);white-space:nowrap}
+.brand-s{font-size:.8rem;color:var(--muted)}
+.tabs{display:flex;gap:.35rem;overflow-x:auto;padding-bottom:.6rem;scrollbar-width:thin}
+.tab{flex:0 0 auto;display:flex;align-items:center;gap:.5rem;min-height:44px;padding:.35rem .8rem .35rem .5rem;border:1px solid var(--line);border-radius:8px;
+  color:var(--fg);text-decoration:none;background:var(--paper)}
+.tab-n{display:grid;place-items:center;width:1.6rem;height:1.6rem;border-radius:50%;background:var(--grid);font:600 .8rem var(--font-mono)}
+.tab-t{font-weight:600;white-space:nowrap}
+.tab-m{font-size:.75rem;color:var(--muted);white-space:nowrap}
+.tab.on{background:var(--brand);border-color:var(--brand);color:var(--on-solid)}
+.tab.on .tab-m{color:var(--on-solid);opacity:.85}
+.tab.on .tab-n{background:var(--on-solid);color:var(--brand)}
+.tab.ok:not(.on) .tab-n{background:var(--ok);color:var(--on-solid)}
+
+/* controls */
+.btn{font:inherit;font-weight:600;min-height:44px;padding:.5rem 1rem;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--fg);cursor:pointer}
+.btn:hover{border-color:var(--brand)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--on-solid)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--on-solid)}
+.seg{display:flex;flex-wrap:wrap;gap:.4rem}
+.seg .btn{padding:.4rem .8rem}
+.field{display:grid;gap:.25rem}
+.field label,.lbl{display:flex;justify-content:space-between;gap:.5rem;font-weight:600;font-size:.92rem}
+.field label b{font-family:var(--font-mono);font-weight:600}
+input[type=range]{width:100%;min-height:34px;accent-color:var(--brand)}
+.tools{display:grid;gap:.9rem}
+
+/* layout */
+main{padding-block:1.5rem 3rem}
+.panel{display:grid;gap:1.25rem}
+.ph{display:grid;gap:.4rem}
+.cols{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:1.25rem;align-items:start}
+@media (max-width:860px){.cols{grid-template-columns:minmax(0,1fr)}}
+.stack{display:grid;gap:1rem;min-width:0}
+.side{display:grid;gap:.9rem;min-width:0}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:1rem;min-width:0}
+.svg{display:block;width:100%;height:auto}
+.sub{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;justify-content:space-between}
+.cap{font-size:.85rem;color:var(--muted)}
+
+/* readouts */
+.ro{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:0;border-top:1px solid var(--line)}
+.ro>div{padding:.65rem .2rem;border-bottom:1px solid var(--line);min-width:0}
+.ro dt{font-size:.8rem;color:var(--muted)}
+.ro dd{margin:0;font:600 1.15rem var(--font-mono);font-variant-numeric:tabular-nums}
+.chip{display:inline-flex;align-items:center;gap:.4rem;padding:.25rem .7rem;border-radius:999px;font-weight:600;font-size:.9rem;background:var(--grid)}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.chip.info{background:var(--brand-soft);color:var(--brand)}
+.formula{font:600 1.05rem var(--font-mono);padding:.6rem .8rem;background:var(--brand-soft);border-radius:8px;color:var(--fg)}
+.legend{display:flex;flex-wrap:wrap;gap:.4rem 1rem;font-size:.88rem}
+.legend i{display:inline-block;width:.8rem;height:.8rem;border-radius:3px;margin-right:.35rem;vertical-align:-1px}
+.i-tumpu{background:var(--tumpu)}.i-beban{background:var(--beban)}.i-kuasa{background:var(--kuasa)}
+.callout{padding:.8rem 1rem;border-radius:8px;background:var(--beban-soft);color:var(--fg);border:1px solid var(--beban)}
+.note{border:1px dashed var(--line);border-radius:8px;padding:.6rem .9rem;background:var(--paper)}
+.note summary{cursor:pointer;font-weight:600}
+.note ul{margin:.5rem 0 0;padding-left:1.2rem}
+.fb{min-height:1.5rem}
+.fb.ok{color:var(--ok)}.fb.bad{color:var(--bad)}
+
+/* meters */
+.meter{display:grid;gap:.35rem}
+.meter-h{display:flex;justify-content:space-between;gap:.5rem;font-size:.92rem}
+.meter-h b{font-family:var(--font-mono)}
+.bar{position:relative;height:14px;border-radius:7px;background:var(--grid)}
+.bar>i{position:absolute;inset:0 auto 0 0;border-radius:7px;background:var(--brand);width:0;transition:width .5s}
+.bar>i.ok{background:var(--ok)}.bar>i.bad{background:var(--bad)}
+.bar .lim{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--fg)}
+.limtxt{font-size:.78rem;color:var(--muted)}
+
+/* option cards */
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.6rem}
+.opt{font:inherit;text-align:left;display:grid;gap:.2rem;padding:.75rem .9rem;border-radius:10px;border:1px solid var(--line);background:var(--paper);color:var(--fg);cursor:pointer;min-height:44px}
+.opt b{font-family:var(--font-display);font-weight:600}
+.opt span{font-size:.85rem;color:var(--muted)}
+.opt[aria-pressed="true"]{border:2px solid var(--brand);padding:calc(.75rem - 1px) calc(.9rem - 1px)}
+.opt.tried::after{content:"sudah dicoba";font-size:.72rem;color:var(--muted)}
+
+/* concept tiles */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.25rem}
+.tiles>div{border-top:2px solid var(--fg);padding-top:.6rem;display:grid;gap:.25rem;align-content:start}
+.fam{display:flex;flex-wrap:wrap;gap:.5rem}
+.fam a{display:inline-flex;align-items:center;min-height:44px;padding:.4rem .9rem;border-radius:8px;border:1px solid var(--brand);color:var(--brand);font-weight:600;text-decoration:none;background:var(--paper)}
+
+/* svg classes */
+.f-wood{fill:var(--wood)}.f-wood2{fill:var(--wood2)}.f-metal{fill:var(--metal)}.f-paper{fill:var(--paper)}.f-ink{fill:var(--fg)}
+.f-ground{fill:var(--ground)}.f-skin{fill:var(--skin)}.f-soil{fill:var(--soil)}.f-glass{fill:var(--glass)}.f-brand{fill:var(--brand)}.f-soft{fill:var(--brand-soft)}
+.f-tumpu{fill:var(--tumpu)}.f-beban{fill:var(--beban)}.f-kuasa{fill:var(--kuasa)}
+.f-tumpu-s{fill:var(--tumpu-soft)}.f-beban-s{fill:var(--beban-soft)}.f-kuasa-s{fill:var(--kuasa-soft)}
+.s-ink{stroke:var(--fg)}.s-metal{stroke:var(--metal);fill:none}.s-wood{stroke:var(--wood);fill:none}.s-ground{stroke:var(--ground);fill:none}
+.s-tumpu{stroke:var(--tumpu)}.s-beban{stroke:var(--beban)}.s-kuasa{stroke:var(--kuasa)}
+.s-rope{stroke:var(--wood2);stroke-width:3;fill:none}
+.sv-t{font:500 13px var(--font-body);fill:var(--fg)}
+.sv-m{font:600 13px var(--font-mono);fill:var(--fg)}
+.t-tumpu{fill:var(--tumpu)}.t-beban{fill:var(--beban)}.t-kuasa{fill:var(--kuasa)}
+.bd{font:700 12px var(--font-body);fill:var(--on-solid)}
+.ld{font:600 13px var(--font-mono);fill:var(--fg);text-anchor:middle}
+.pt{cursor:pointer}
+.pt:focus{outline:none}
+.pt-c{fill:var(--paper);stroke:var(--fg);stroke-width:2.5}
+.pt-l{font:700 15px var(--font-body);fill:var(--fg)}
+.pt:hover .pt-c{stroke-width:4}
+.pt:focus-visible .pt-c{stroke:var(--brand);stroke-width:5}
+.pt.tumpu .pt-c{fill:var(--tumpu);stroke:var(--tumpu)}.pt.beban .pt-c{fill:var(--beban);stroke:var(--beban)}.pt.kuasa .pt-c{fill:var(--kuasa);stroke:var(--kuasa)}
+.pt.has .pt-l{fill:var(--on-solid)}
+.tag{font:700 13px var(--font-body);text-anchor:middle;paint-order:stroke;stroke:var(--paper);stroke-width:5px;stroke-linejoin:round}
+.tag-tumpu{fill:var(--tumpu)}.tag-beban{fill:var(--beban)}.tag-kuasa{fill:var(--kuasa)}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+.shake{animation:shake .5s}
+
+/* identify */
+.dots{display:flex;flex-wrap:wrap;gap:.4rem}
+.dot{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--paper);color:var(--fg);font:600 .95rem var(--font-mono);cursor:pointer}
+.dot.on{border:2px solid var(--brand)}
+.dot.ok{background:var(--ok);border-color:var(--ok);color:var(--on-solid)}
+.roles{display:flex;flex-wrap:wrap;gap:.5rem}
+.role{font:inherit;font-weight:600;min-height:44px;padding:.4rem .9rem;border-radius:8px;border:2px solid var(--line);background:var(--paper);color:var(--fg);cursor:pointer;display:inline-flex;align-items:center;gap:.5rem}
+.role i{width:.8rem;height:.8rem;border-radius:3px}
+.role[aria-pressed="true"]{border-color:var(--fg)}
+.role.tumpu i{background:var(--tumpu)}.role.beban i{background:var(--beban)}.role.kuasa i{background:var(--kuasa)}
+.fblist{list-style:none;margin:0;padding:0;display:grid;gap:.3rem}
+.fblist li.ok{color:var(--ok)}.fblist li.bad{color:var(--bad)}
+.order{display:grid;gap:.35rem;font-size:.92rem;margin:.5rem 0 0;padding:0;list-style:none}
+
+/* quiz */
+.qopts{display:grid;gap:.5rem}
+.qo{font:inherit;text-align:left;min-height:48px;padding:.6rem .9rem;border-radius:10px;border:1px solid var(--line);background:var(--paper);color:var(--fg);cursor:pointer}
+.qo:hover:not(:disabled){border-color:var(--brand)}
+.qo.ok{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.qo.bad{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.qo:disabled{cursor:default}
+.qprog{display:flex;gap:.3rem}
+.qprog i{flex:1;height:8px;border-radius:4px;background:var(--grid)}
+.qprog i.ok{background:var(--ok)}.qprog i.bad{background:var(--bad)}.qprog i.now{background:var(--brand)}
+.score{font:700 3rem var(--font-display)}
+.rec{display:grid;gap:.5rem}
+.rec-r{display:grid;grid-template-columns:8rem 1fr 3rem;align-items:center;gap:.6rem;font-size:.92rem}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{padding:.45rem .5rem;border-bottom:1px solid var(--line);text-align:left}
+th{font-size:.78rem;color:var(--muted);font-weight:600}
+tr.sel td{background:var(--brand-soft);font-weight:600}
+.scroll-x{overflow-x:auto}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<header class="hd">
+  <div class="wrap">
+    <div class="hd-row">
+      <div class="brand">
+        <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect x="3" y="15" width="28" height="5" rx="2" class="f-wood" transform="rotate(-12 17 17)"/><polygon points="17,18 11,30 23,30" class="f-tumpu"/><circle cx="17" cy="17" r="3" class="f-paper s-ink" stroke-width="2"/></svg>
+        <div><div class="brand-t">Lab Pesawat Sederhana</div><div class="brand-s">IPA kelas VIII</div></div>
+      </div>
+      <button class="btn" id="bigBtn" aria-pressed="false" title="Perbesar tampilan untuk layar proyektor atau IFP">Layar besar</button>
+    </div>
+    <nav class="tabs" id="tabs" aria-label="Bagian pelajaran"></nav>
+  </div>
+</header>
+<main class="wrap">
+
+<section id="p-mulai" class="panel" aria-labelledby="h-mulai">
+  <div class="ph">
+    <p class="eyebrow">Situasi awal</p>
+    <h1 id="h-mulai">Drum 100 kg dan bak truk setinggi 1 m</h1>
+    <p class="lead">Kamu bekerja sendirian dan hanya sanggup memberi gaya sampai 250 N. Pilih satu cara untuk menaikkan drum, lalu lihat apa yang terjadi. Coba beberapa cara.</p>
+  </div>
+  <div class="cols">
+    <div class="stack">
+      <div class="card">
+        <svg class="svg" viewBox="0 0 640 230" role="img" aria-label="Drum di tanah dan bak truk setinggi 1 meter">
+          <rect x="0" y="190" width="640" height="40" class="f-ground"/>
+          <rect x="410" y="120" width="220" height="16" rx="3" class="f-metal"/>
+          <rect x="410" y="136" width="220" height="30" class="f-ink" opacity=".75"/>
+          <circle cx="470" cy="166" r="24" class="f-paper s-ink" stroke-width="8"/>
+          <circle cx="570" cy="166" r="24" class="f-paper s-ink" stroke-width="8"/>
+          <line x1="392" y1="120" x2="392" y2="190" class="s-ink" stroke-width="2" stroke-dasharray="4 3"/>
+          <line x1="386" y1="120" x2="398" y2="120" class="s-ink" stroke-width="2"/>
+          <line x1="386" y1="190" x2="398" y2="190" class="s-ink" stroke-width="2"/>
+          <text x="382" y="160" text-anchor="end" class="sv-m">1 m</text>
+          <text id="m-tool" x="16" y="30" class="sv-t">Pilih alat di bawah untuk mencoba.</text>
+          <text x="16" y="52" class="sv-t t-kuasa">Gayamu paling besar 250 N</text>
+          <g id="drum" style="transform:translate(0,0)">
+            <rect x="110" y="120" width="64" height="70" rx="8" class="f-beban-s s-beban" stroke-width="3"/>
+            <line x1="110" y1="140" x2="174" y2="140" class="s-beban" stroke-width="2"/>
+            <line x1="110" y1="170" x2="174" y2="170" class="s-beban" stroke-width="2"/>
+            <text x="142" y="161" text-anchor="middle" class="sv-m">100 kg</text>
+          </g>
+        </svg>
+      </div>
+      <div id="m-opts" class="opts"></div>
+    </div>
+    <div class="side">
+      <h2>Hasil percobaan</h2>
+      <div class="meter">
+        <div class="meter-h"><span>Gaya yang kamu keluarkan</span><b id="m-f">belum dicoba</b></div>
+        <div class="bar"><i id="m-fb"></i><u class="lim" style="left:25%"></u></div>
+        <div class="limtxt">Garis hitam: batas kekuatanmu, 250 N</div>
+      </div>
+      <div class="meter">
+        <div class="meter-h"><span>Jarak yang kamu tempuh</span><b id="m-s">belum dicoba</b></div>
+        <div class="bar"><i id="m-sb"></i></div>
+      </div>
+      <dl class="ro"><div><dt>Usaha = gaya × jarak</dt><dd id="m-w">-</dd></div></dl>
+      <div id="m-status" class="fb" aria-live="polite">Pilih salah satu cara di bawah gambar.</div>
+    </div>
+  </div>
+  <div class="card" style="display:grid;gap:1rem">
+    <h2>Apa itu pesawat sederhana?</h2>
+    <p style="max-width:65ch">Pesawat sederhana adalah alat tanpa mesin rumit yang membantu kita melakukan usaha dengan lebih mudah. Alat ini bekerja dengan tiga cara.</p>
+    <div class="tiles">
+      <div><h3>Memperkecil gaya</h3><p class="muted">Papan miring dan tuas jenis kedua membuat gaya yang kita keluarkan lebih kecil dari berat beban.</p></div>
+      <div><h3>Mengubah arah gaya</h3><p class="muted">Katrol tetap membuat kita menarik tali ke bawah untuk menaikkan beban ke atas.</p></div>
+      <div><h3>Mengubah jarak gerak</h3><p class="muted">Pinset dan sekop menggerakkan ujung beban lebih jauh dengan gerakan tangan yang kecil.</p></div>
+    </div>
+    <p class="callout">Yang tidak berubah: usaha. Gaya dikali jarak tetap sama, jadi gaya yang lebih kecil selalu dibayar dengan jarak yang lebih jauh.</p>
+    <div class="formula">KM = berat beban ÷ gaya yang diberikan</div>
+    <p class="cap">KM adalah keuntungan mekanis. KM = 4 berarti gaya yang kamu berikan 4 kali lebih kecil dari berat beban. Lanjutkan ke tiga jenis pesawat sederhana:</p>
+    <div class="fam"><a href="#tuas" data-go="tuas">Tuas</a><a href="#bidang-miring" data-go="bidang-miring">Bidang miring</a><a href="#katrol" data-go="katrol">Katrol</a></div>
+    <details class="note"><summary>Pertanyaan diskusi kelas</summary><ul><li>Mengapa orang tetap memilih papan miring walaupun jaraknya lebih jauh?</li><li>Apakah ada cara yang membuat usaha menjadi lebih kecil dari 1.000 J? Mengapa?</li></ul></details>
+  </div>
+</section>
+
+<section id="p-tuas" class="panel" aria-labelledby="h-tuas" hidden>
+  <div class="ph">
+    <p class="eyebrow">Tuas atau pengungkit</p>
+    <h1 id="h-tuas">Titik tumpu, beban, dan kuasa</h1>
+    <p class="lead">Tuas adalah batang kaku yang berputar pada satu titik. Pelajari dulu cara kerjanya, lalu kenali jenis tuas pada benda sehari-hari.</p>
+  </div>
+  <div class="seg" role="group" aria-label="Pilih kegiatan tuas">
+    <button class="btn" data-sub="sim" aria-pressed="true">Simulasi tuas</button>
+    <button class="btn" data-sub="id" aria-pressed="false">Kenali jenis tuas</button>
+  </div>
+
+  <div id="tu-sim" class="cols">
+    <div class="stack">
+      <div class="card">
+        <svg id="lv-svg" class="svg" viewBox="0 0 640 316" role="img" aria-label="Simulasi tuas"></svg>
+        <div class="legend" style="margin-top:.5rem"><span><i class="i-tumpu"></i>Titik tumpu</span><span><i class="i-beban"></i>Beban</span><span><i class="i-kuasa"></i>Kuasa</span></div>
+      </div>
+      <div class="card tools">
+        <div><div class="lbl">Jenis tuas</div>
+          <div class="seg" id="lv-j" role="group" aria-label="Jenis tuas"><button class="btn" data-j="1" aria-pressed="true">Jenis 1</button><button class="btn" data-j="2" aria-pressed="false">Jenis 2</button><button class="btn" data-j="3" aria-pressed="false">Jenis 3</button></div>
+          <p class="cap" id="lv-jd" style="margin-top:.4rem"></p></div>
+        <div class="field"><label for="lv-w">Berat beban <b id="lv-wv">60 N</b></label><input id="lv-w" type="range" min="30" max="90" step="30" value="60"></div>
+        <div class="field"><label for="lv-lb">Lengan beban (jarak beban ke tumpu) <b id="lv-lbv"></b></label><input id="lv-lb" type="range" min="10" max="100" step="10" value="30"></div>
+        <div class="field"><label for="lv-lk">Lengan kuasa (jarak kuasa ke tumpu) <b id="lv-lkv"></b></label><input id="lv-lk" type="range" min="10" max="100" step="10" value="60"></div>
+        <div class="field"><label for="lv-f">Gaya kuasa yang kamu berikan <b id="lv-fv"></b></label><input id="lv-f" type="range" min="0" max="150" step="1" value="30"></div>
+        <div class="seg"><button class="btn primary" id="lv-auto">Cari gaya yang pas</button></div>
+      </div>
+    </div>
+    <div class="side">
+      <h2>Hasil ukur</h2>
+      <div id="lv-chip"></div>
+      <dl class="ro" id="lv-ro"></dl>
+      <div class="formula">beban × lengan beban = kuasa × lengan kuasa</div>
+      <p class="cap" id="lv-note"></p>
+      <details class="note"><summary>Pertanyaan diskusi kelas</summary><ul><li>Pada jenis 1, apa yang terjadi pada KM jika tumpu digeser mendekati beban?</li><li>Mengapa tuas jenis 3 tetap dipakai walaupun gayanya harus lebih besar dari beban?</li></ul></details>
+    </div>
+  </div>
+
+  <div id="tu-id" hidden>
+    <div class="cols">
+      <div class="stack">
+        <div class="card" id="id-card"></div>
+      </div>
+      <div class="side" id="id-side"></div>
+    </div>
+  </div>
+</section>
+
+<section id="p-bidang-miring" class="panel" aria-labelledby="h-miring" hidden>
+  <div class="ph">
+    <p class="eyebrow">Bidang miring</p>
+    <h1 id="h-miring">Mengapa jalan menanjak dibuat panjang?</h1>
+    <p class="lead">Pak Budi harus menaikkan drum 100 kg (berat 1.000 N) ke bak truk setinggi 1 m. Kekuatannya paling besar 250 N. Gesekan diabaikan.</p>
+  </div>
+  <div class="card" style="display:grid;gap:.6rem">
+    <div class="lbl"><span>Prediksi dulu: papan mana yang lebih ringan didorong?</span></div>
+    <div class="seg" id="mi-pred"><button class="btn" data-p="a">Papan 2 m</button><button class="btn" data-p="b">Papan 4 m</button><button class="btn" data-p="c">Sama saja</button></div>
+    <p id="mi-predfb" class="fb" aria-live="polite"></p>
+  </div>
+  <div class="cols">
+    <div class="stack">
+      <div class="card"><svg id="mi-svg" class="svg" viewBox="0 0 700 280" role="img" aria-label="Drum didorong naik papan miring ke bak truk"></svg></div>
+      <div class="card tools">
+        <div class="field"><label for="mi-s">Panjang papan miring <b id="mi-sv"></b></label><input id="mi-s" type="range" min="1.5" max="8" step="0.5" value="2"></div>
+        <div class="seg"><button class="btn primary" id="mi-go">Coba dorong drum</button><button class="btn" id="mi-reset">Ulangi</button></div>
+        <p id="mi-fb" class="fb" aria-live="polite"></p>
+      </div>
+    </div>
+    <div class="side">
+      <h2>Hasil ukur</h2>
+      <div id="mi-chip"></div>
+      <dl class="ro" id="mi-ro"></dl>
+      <div class="formula">F = (berat × tinggi) ÷ panjang<br>KM = panjang ÷ tinggi</div>
+      <p class="cap">Papan lebih panjang membuat gaya lebih kecil, tetapi drum menempuh jarak lebih jauh. Usaha tetap 1.000 J.</p>
+    </div>
+  </div>
+  <div class="card" style="display:grid;gap:1rem">
+    <h2>Mengapa bidang miring membantu kita sehari-hari?</h2>
+    <div class="tiles">
+      <div><h3>Jalan pegunungan berkelok</h3><p class="muted">Jalan lurus ke puncak sangat curam. Jalan berkelok memperpanjang lintasan sehingga tanjakan landai dan mesin kendaraan tidak terlalu berat.</p></div>
+      <div><h3>Jalur kursi roda</h3><p class="muted">Ramp dibuat panjang dan landai agar pengguna kursi roda cukup memberi gaya kecil untuk naik ke teras atau gedung.</p></div>
+      <div><h3>Papan naik truk dan gerobak</h3><p class="muted">Barang berat didorong naik papan daripada diangkat. Gaya kecil, tetapi jarak dorong lebih jauh.</p></div>
+      <div><h3>Sekrup dan baji</h3><p class="muted">Ulir sekrup adalah bidang miring yang melingkar. Baji pada kapak adalah dua bidang miring yang saling menempel.</p></div>
+    </div>
+    <svg class="svg" viewBox="0 0 640 170" role="img" aria-label="Jalan lurus curam dibandingkan jalan berkelok di gunung" style="max-width:640px">
+      <polygon points="40,150 190,30 340,150" class="f-ground"/>
+      <line x1="95" y1="150" x2="190" y2="30" class="s-ink" stroke-width="3" stroke-dasharray="6 4"/>
+      <text x="190" y="164" text-anchor="middle" class="sv-t">Lurus: pendek, curam, gaya besar</text>
+      <polygon points="340,150 490,30 640,150" class="f-ground"/>
+      <polyline points="360,150 560,140 400,118 540,108 430,88 510,78 470,56 490,32" fill="none" class="s-kuasa" stroke-width="3"/>
+      <text x="500" y="164" text-anchor="middle" class="sv-t">Berkelok: panjang, landai, gaya kecil</text>
+    </svg>
+    <details class="note"><summary>Pertanyaan diskusi kelas</summary><ul><li>Mengapa pengendara truk memilih jalan berkelok walaupun jaraknya lebih jauh?</li><li>Jika tinggi tetap 1 m, berapa panjang papan agar gaya turun menjadi 100 N?</li></ul></details>
+  </div>
+</section>
+
+<section id="p-katrol" class="panel" aria-labelledby="h-katrol" hidden>
+  <div class="ph">
+    <p class="eyebrow">Katrol</p>
+    <h1 id="h-katrol">Dari katrol tetap sampai takal</h1>
+    <p class="lead">Pilih jenis katrol, pilih beban, lalu tarik talinya. Hitung tali yang menopang beban (lingkaran bernomor) dan bandingkan dengan gaya tarik.</p>
+  </div>
+  <div class="cols">
+    <div class="stack">
+      <div class="card"><svg id="ka-svg" class="svg" viewBox="0 0 360 400" role="img" aria-label="Simulasi katrol" style="max-height:70vh"></svg><p class="cap">Gambar skematis. Lingkaran bernomor menandai tali yang menopang beban.</p></div>
+      <div class="card tools">
+        <div><div class="lbl">Jenis katrol</div><div class="seg" id="ka-type"></div></div>
+        <div><div class="lbl">Berat beban</div><div class="seg" id="ka-load"><button class="btn" data-w="60" aria-pressed="false">60 N</button><button class="btn" data-w="120" aria-pressed="true">120 N</button><button class="btn" data-w="240" aria-pressed="false">240 N</button></div></div>
+        <div class="field"><label for="ka-p">Tarik tali <b id="ka-pv"></b></label><input id="ka-p" type="range" min="0" max="100" step="1" value="50"></div>
+        <div class="seg"><button class="btn primary" id="ka-auto">Tarik otomatis</button></div>
+      </div>
+    </div>
+    <div class="side">
+      <h2>Hasil ukur</h2>
+      <div id="ka-chip"></div>
+      <dl class="ro" id="ka-ro"></dl>
+      <div class="formula">KM = jumlah tali penopang beban<br>F = berat ÷ KM</div>
+      <p class="cap" id="ka-note"></p>
+      <div class="scroll-x"><table id="ka-tbl"></table></div>
+      <details class="note"><summary>Pertanyaan diskusi kelas</summary><ul><li>Katrol tetap tidak memperkecil gaya. Mengapa alat ini tetap berguna?</li><li>Jika KM = 4 dan beban naik 1 m, berapa panjang tali yang harus ditarik?</li></ul></details>
+    </div>
+  </div>
+</section>
+
+<section id="p-kuis" class="panel" aria-labelledby="h-kuis" hidden>
+  <div class="ph">
+    <p class="eyebrow">Uji pemahaman</p>
+    <h1 id="h-kuis">Kuis pesawat sederhana</h1>
+  </div>
+  <div class="card" id="qz" style="display:grid;gap:1rem"></div>
+</section>
+</main>
+<script>
+(function(){
+'use strict';
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const fmt=(n,d=0)=>Number(n).toLocaleString('id-ID',{minimumFractionDigits:d,maximumFractionDigits:d});
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+const ROLE={tumpu:{n:'Titik tumpu'},beban:{n:'Beban'},kuasa:{n:'Kuasa'}};
+
+/* ---------- navigasi ---------- */
+const TABS=[['mulai','Mulai',4],['tuas','Tuas',8],['bidang-miring','Bidang miring',5],['katrol','Katrol',6],['kuis','Kuis',7]];
+const done={};
+let curTab='mulai';
+function renderTabs(){
+  $('#tabs').innerHTML=TABS.map(([id,t,m],i)=>
+    `<a href="#${id}" data-go="${id}" class="tab${id===curTab?' on':''}${done[id]?' ok':''}"${id===curTab?' aria-current="page"':''}>`+
+    `<span class="tab-n">${done[id]?'✓':i+1}</span><span class="tab-t">${t}</span><span class="tab-m">${m} mnt</span></a>`).join('');
+}
+function show(id){
+  if(!TABS.some(t=>t[0]===id)) id='mulai';
+  curTab=id;
+  $$('.panel').forEach(p=>{p.hidden=(p.id!=='p-'+id)});
+  renderTabs();
+  window.scrollTo(0,0);
+}
+function mark(id){ if(!done[id]){done[id]=true;renderTabs();} }
+function fromHash(){ show((location.hash||'').slice(1)); }
+document.addEventListener('click',e=>{
+  const g=e.target.closest('[data-go]');
+  if(g){ e.preventDefault(); show(g.dataset.go); try{location.hash=g.dataset.go}catch(err){} return; }
+  const a=e.target.closest('[data-act]');
+  if(a && ACT[a.dataset.act]) ACT[a.dataset.act](a,e);
+});
+document.addEventListener('keydown',e=>{
+  if((e.key==='Enter'||e.key===' ') && e.target.classList && e.target.classList.contains('pt')){
+    e.preventDefault(); e.target.dispatchEvent(new MouseEvent('click',{bubbles:true}));
+  }
+});
+window.addEventListener('hashchange',fromHash);
+$('#bigBtn').addEventListener('click',e=>{
+  const on=document.documentElement.classList.toggle('big');
+  e.currentTarget.setAttribute('aria-pressed',String(on));
+});
+const ACT={};
+
+/* ---------- bagian Mulai ---------- */
+const OPTS=[
+  {k:'Angkat langsung',d:'Drum diangkat dengan tangan.',F:1000,s:1,tool:'Alat: tidak ada'},
+  {k:'Papan miring 2 m',d:'Drum didorong naik di papan 2 m.',F:500,s:2,tool:'Alat: papan miring 2 m'},
+  {k:'Papan miring 4 m',d:'Drum didorong naik di papan 4 m.',F:250,s:4,tool:'Alat: papan miring 4 m'},
+  {k:'Tuas (pengungkit)',d:'Lengan kuasa 4 kali lebih panjang dari lengan beban.',F:250,s:4,tool:'Alat: tuas, lengan kuasa : lengan beban = 4 : 1'},
+  {k:'Takal 4 tali',d:'Empat tali menopang drum, tali ditarik ke bawah.',F:250,s:4,tool:'Alat: takal dengan 4 tali penopang'}
+];
+const tried=new Set();
+let okTried=false;
+function renderOpts(sel){
+  $('#m-opts').innerHTML=OPTS.map((o,i)=>`<button class="opt${tried.has(i)?' tried':''}" data-act="opt" data-i="${i}" aria-pressed="${sel===i}"><b>${o.k}</b><span>${o.d}</span></button>`).join('');
+}
+ACT.opt=function(t){
+  const i=+t.dataset.i, o=OPTS[i], ok=o.F<=250, drum=$('#drum');
+  tried.add(i);
+  drum.classList.remove('shake');
+  drum.style.transition='none'; drum.style.transform='translate(0,0)'; void drum.getBoundingClientRect();
+  $('#m-tool').textContent=o.tool;
+  if(ok){ drum.style.transition=reduce?'none':'transform 1.4s ease-in-out'; drum.style.transform='translate(360px,-70px)'; okTried=true; }
+  else if(!reduce){ void drum.offsetWidth; drum.classList.add('shake'); }
+  $('#m-f').textContent=fmt(o.F)+' N';
+  $('#m-s').textContent=fmt(o.s)+' m';
+  $('#m-w').textContent=fmt(o.F*o.s)+' J';
+  const fb=$('#m-fb'); fb.style.width=(o.F/1000*100)+'%'; fb.className=ok?'ok':'bad';
+  $('#m-sb').style.width=(o.s/4*100)+'%';
+  const st=$('#m-status');
+  st.className='fb '+(ok?'ok':'bad');
+  st.textContent=ok
+    ?`Berhasil. Kamu hanya mengeluarkan ${fmt(o.F)} N, tetapi menempuh ${fmt(o.s)} m. Usaha tetap ${fmt(o.F*o.s)} J.`
+    :`Belum berhasil. Dibutuhkan ${fmt(o.F)} N, padahal kamu hanya sanggup 250 N.`;
+  renderOpts(i);
+  if(okTried && tried.size>=3) mark('mulai');
+};
+renderOpts(-1);
+
+/* ---------- Tuas: sub-tab ---------- */
+$$('[data-sub]').forEach(b=>b.addEventListener('click',()=>{
+  $$('[data-sub]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  $('#tu-sim').hidden=b.dataset.sub!=='sim';
+  $('#tu-id').hidden=b.dataset.sub!=='id';
+}));
+
+/* ---------- Tuas: simulasi ---------- */
+const LV={j:1,lb:30,lk:60,F:30,W:60};
+const GEO={1:{px:320,py:170,s:2.8,l:105,r:105,max:14},2:{px:60,py:150,s:5,l:0,r:105,max:10},3:{px:60,py:150,s:5,l:0,r:105,max:10}};
+const JDESC={
+  1:'Titik tumpu berada di antara beban dan kuasa. Contoh: jungkat-jungkit, gunting.',
+  2:'Beban berada di antara titik tumpu dan kuasa. Lengan kuasa selalu lebih panjang. Contoh: gerobak dorong.',
+  3:'Kuasa berada di antara titik tumpu dan beban. Lengan kuasa selalu lebih pendek. Contoh: pinset, sekop.'
+};
+function lvNormalize(changed){
+  const lb=$('#lv-lb'), lk=$('#lv-lk');
+  if(LV.j===2){
+    lb.min=10; lb.max=90; lk.min=20; lk.max=100;
+    if(LV.lk<=LV.lb){ if(changed==='lb') LV.lk=LV.lb+10; else LV.lb=LV.lk-10; }
+  } else if(LV.j===3){
+    lk.min=10; lk.max=90; lb.min=20; lb.max=100;
+    if(LV.lk>=LV.lb){ if(changed==='lk') LV.lb=LV.lk+10; else LV.lk=LV.lb-10; }
+  } else { lb.min=10; lb.max=100; lk.min=10; lk.max=100; }
+  lb.value=LV.lb; lk.value=LV.lk;
+}
+function lvDraw(){
+  const g=GEO[LV.j], j=LV.j;
+  const diff=LV.F*LV.lk-LV.W*LV.lb;
+  const k=clamp(diff/300,-1,1);
+  const deg=(j===1?1:-1)*k*g.max, a=deg*Math.PI/180, c=Math.cos(a), sn=Math.sin(a);
+  const P=d=>[g.px+d*g.s*c,g.py+d*g.s*sn];
+  const A=P(-g.l), B=P(g.r);
+  const Pb=P(j===1?-LV.lb:LV.lb), Pk=P(LV.lk);
+  let s='<line x1="16" y1="250" x2="624" y2="250" class="s-ground" stroke-width="3"/>';
+  s+=`<polygon points="${g.px-22},250 ${g.px+22},250 ${g.px},${g.py+10}" class="f-tumpu-s s-tumpu" stroke-width="3"/>`;
+  s+=`<line x1="${A[0]}" y1="${A[1]}" x2="${B[0]}" y2="${B[1]}" class="s-wood" stroke-width="14" stroke-linecap="round"/>`;
+  s+=`<circle cx="${g.px}" cy="${g.py}" r="7" class="f-tumpu"/>`;
+  const lx=j===1?g.px-28:g.px+28, an=j===1?'end':'start';
+  s+=`<text x="${lx}" y="240" text-anchor="${an}" class="sv-t t-tumpu" font-weight="600">titik tumpu</text>`;
+  /* beban */
+  s+=`<rect x="${Pb[0]-24}" y="${Pb[1]-51}" width="48" height="42" rx="5" class="f-beban-s s-beban" stroke-width="3"/>`;
+  s+=`<text x="${Pb[0]}" y="${Pb[1]-25}" class="ld">${LV.W} N</text>`;
+  s+=`<text x="${Pb[0]}" y="${Pb[1]-58}" text-anchor="middle" class="sv-t t-beban" font-weight="600">beban</text>`;
+  /* kuasa */
+  const len=14+LV.F*0.35;
+  if(LV.F>0){
+    if(j===1){
+      s+=`<line x1="${Pk[0]}" y1="${Pk[1]-10-len}" x2="${Pk[0]}" y2="${Pk[1]-22}" class="s-kuasa" stroke-width="5"/>`;
+      s+=`<polygon points="${Pk[0]-9},${Pk[1]-24} ${Pk[0]+9},${Pk[1]-24} ${Pk[0]},${Pk[1]-9}" class="f-kuasa"/>`;
+    } else {
+      s+=`<line x1="${Pk[0]}" y1="${Pk[1]+10+len}" x2="${Pk[0]}" y2="${Pk[1]+22}" class="s-kuasa" stroke-width="5"/>`;
+      s+=`<polygon points="${Pk[0]-9},${Pk[1]+24} ${Pk[0]+9},${Pk[1]+24} ${Pk[0]},${Pk[1]+9}" class="f-kuasa"/>`;
+    }
+  }
+  const ky=j===1?Pk[1]-18-len-10:Pk[1]+30+len+12;
+  s+=`<text x="${Pk[0]}" y="${ky}" text-anchor="middle" class="sv-m t-kuasa">kuasa F = ${LV.F} N</text>`;
+  /* garis ukur */
+  const dim=(x1,x2,y,col,txt)=>{
+    const mid=(x1+x2)/2;
+    return `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" class="s-${col}" stroke-width="2"/>`+
+      `<line x1="${x1}" y1="${y-5}" x2="${x1}" y2="${y+5}" class="s-${col}" stroke-width="2"/>`+
+      `<line x1="${x2}" y1="${y-5}" x2="${x2}" y2="${y+5}" class="s-${col}" stroke-width="2"/>`+
+      `<text x="${mid}" y="${y-7}" text-anchor="middle" class="sv-m t-${col}">${txt}</text>`;
+  };
+  s+=dim(g.px,Pb[0],274,'beban','lengan beban = '+LV.lb+' cm');
+  s+=dim(g.px,Pk[0],302,'kuasa','lengan kuasa = '+LV.lk+' cm');
+  $('#lv-svg').innerHTML=s;
+
+  /* hasil ukur */
+  const tol=0.03*LV.W*LV.lb;
+  let state,cls;
+  if(LV.F>0 && Math.abs(diff)<=tol){state='Seimbang';cls='ok';}
+  else if(diff>0){state='Beban terangkat';cls='ok';}
+  else {state='Beban turun, tambah gaya';cls='bad';}
+  $('#lv-chip').innerHTML=`<span class="chip ${cls}">${state}</span>`;
+  const km=LV.lk/LV.lb, fmin=LV.W*LV.lb/LV.lk;
+  $('#lv-ro').innerHTML=
+    `<div><dt>Beban × lengan beban</dt><dd>${fmt(LV.W*LV.lb)} N·cm</dd></div>`+
+    `<div><dt>Kuasa × lengan kuasa</dt><dd>${fmt(LV.F*LV.lk)} N·cm</dd></div>`+
+    `<div><dt>KM = lengan kuasa ÷ lengan beban</dt><dd>${fmt(km,2)}</dd></div>`+
+    `<div><dt>Gaya minimum</dt><dd>${fmt(fmin,1)} N</dd></div>`;
+  $('#lv-note').textContent=km>1.001?'KM lebih dari 1: gaya yang dibutuhkan lebih kecil dari berat beban, tetapi titik kuasa bergerak lebih jauh.'
+    :km<0.999?'KM kurang dari 1: gaya yang dibutuhkan lebih besar dari berat beban, tetapi beban bergerak lebih jauh dan cepat.'
+    :'KM sama dengan 1: gaya sama dengan berat beban. Tuas hanya mengubah arah gaya.';
+  $('#lv-wv').textContent=LV.W+' N'; $('#lv-lbv').textContent=LV.lb+' cm'; $('#lv-lkv').textContent=LV.lk+' cm'; $('#lv-fv').textContent=LV.F+' N';
+  $('#lv-jd').textContent=JDESC[j];
+  if(LV.F>0 && Math.abs(diff)<=tol) lvFound=true;
+}
+let lvFound=false;
+function lvSetJ(j){
+  LV.j=j;
+  if(j===1){LV.lb=30;LV.lk=60;}
+  if(j===2){LV.lb=30;LV.lk=90;}
+  if(j===3){LV.lb=80;LV.lk=30;}
+  LV.F=Math.round(LV.W*LV.lb/LV.lk);
+  $('#lv-f').value=LV.F;
+  $$('#lv-j button').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.j===j)));
+  lvNormalize(); lvDraw();
+}
+$$('#lv-j button').forEach(b=>b.addEventListener('click',()=>lvSetJ(+b.dataset.j)));
+$('#lv-w').addEventListener('input',e=>{LV.W=+e.target.value;lvDraw();});
+$('#lv-lb').addEventListener('input',e=>{LV.lb=+e.target.value;lvNormalize('lb');lvDraw();});
+$('#lv-lk').addEventListener('input',e=>{LV.lk=+e.target.value;lvNormalize('lk');lvDraw();});
+$('#lv-f').addEventListener('input',e=>{LV.F=+e.target.value;lvDraw();});
+$('#lv-auto').addEventListener('click',()=>{
+  LV.F=clamp(Math.ceil(LV.W*LV.lb/LV.lk),0,150); $('#lv-f').value=LV.F; lvDraw();
+});
+lvNormalize(); lvDraw();
+
+/* ---------- Tuas: kenali jenis ---------- */
+const IT=[
+  {name:'Jungkat-jungkit',task:'Anak di kiri akan diangkat naik oleh anak di kanan.',
+   pts:{A:'ujung kiri, tempat anak yang diangkat',B:'tengah papan, penyangga',C:'ujung kanan, tempat anak yang menekan'},
+   pos:{A:[92,97],B:[240,120],C:[388,143]},ans:{tumpu:'B',beban:'A',kuasa:'C'},jenis:1,
+   why:'Titik tumpu berada di antara beban dan kuasa, jadi ini tuas jenis 1. KM bisa lebih, sama, atau kurang dari 1, tergantung letak tumpu.',
+   art:'<line x1="30" y1="205" x2="450" y2="205" class="s-ground" stroke-width="3"/><polygon points="212,205 268,205 240,126" class="f-metal"/>'+
+     '<line x1="60" y1="92" x2="420" y2="148" class="s-wood" stroke-width="14" stroke-linecap="round"/>'+
+     '<circle cx="92" cy="62" r="12" class="f-skin"/><rect x="80" y="74" width="24" height="26" rx="8" class="f-brand"/>'+
+     '<circle cx="388" cy="94" r="12" class="f-skin"/><rect x="376" y="106" width="24" height="28" rx="8" class="f-brand"/>'},
+  {name:'Gerobak dorong',task:'Pasir di gerobak akan diangkat dan dipindahkan dengan mendorong pegangan.',
+   pts:{A:'roda, tempat gerobak bertumpu di tanah',B:'isi gerobak, yaitu pasir',C:'pegangan tempat tangan mengangkat'},
+   pos:{A:[110,172],B:[225,157],C:[425,131]},ans:{tumpu:'A',beban:'B',kuasa:'C'},jenis:2,
+   why:'Beban berada di antara titik tumpu dan kuasa, jadi ini tuas jenis 2. Lengan kuasa lebih panjang, sehingga KM selalu lebih dari 1.',
+   art:'<line x1="20" y1="204" x2="460" y2="204" class="s-ground" stroke-width="3"/>'+
+     '<line x1="330" y1="140" x2="338" y2="204" class="s-ink" stroke-width="6"/><line x1="322" y1="204" x2="352" y2="204" class="s-ink" stroke-width="6"/>'+
+     '<line x1="110" y1="172" x2="430" y2="130" class="s-wood" stroke-width="10" stroke-linecap="round"/>'+
+     '<polygon points="150,110 300,104 285,150 172,160" class="f-metal"/><path d="M170 108 Q225 60 285 104 Z" class="f-soil"/>'+
+     '<circle cx="110" cy="172" r="28" class="f-paper s-ink" stroke-width="7"/><circle cx="110" cy="172" r="5" class="f-ink"/>'+
+     '<rect x="405" y="122" width="36" height="16" rx="6" class="f-ink"/>'},
+  {name:'Pinset',task:'Pinset menjepit manik-manik kecil di ujungnya.',
+   pts:{A:'pangkal pinset, tempat kedua lengan menyatu',B:'bagian tengah, tempat jari menekan',C:'ujung penjepit yang memegang manik-manik'},
+   pos:{A:[66,108],B:[240,114],C:[428,120]},ans:{tumpu:'A',beban:'C',kuasa:'B'},jenis:3,
+   why:'Kuasa berada di antara titik tumpu dan beban, jadi ini tuas jenis 3. Lengan kuasa lebih pendek, KM kurang dari 1, tetapi ujungnya bergerak teliti.',
+   art:'<line x1="60" y1="134" x2="430" y2="124" stroke-width="10" stroke-linecap="round" class="s-metal" opacity=".55"/>'+
+     '<line x1="60" y1="108" x2="430" y2="120" stroke-width="10" stroke-linecap="round" class="s-metal"/>'+
+     '<path d="M60 105 Q38 121 60 137" stroke-width="10" class="s-metal"/>'+
+     '<circle cx="442" cy="122" r="9" class="f-beban-s s-beban" stroke-width="3"/>'+
+     '<rect x="222" y="48" width="36" height="52" rx="18" class="f-skin"/><rect x="222" y="142" width="36" height="52" rx="18" class="f-skin"/>'},
+  {name:'Pembuka tutup botol',task:'Tutup botol akan dicongkel naik oleh pembuka.',
+   pts:{A:'ujung pembuka yang bertumpu di atas tutup',B:'kait yang menahan tepi tutup',C:'ujung pegangan tempat tangan menarik ke atas'},
+   pos:{A:[95,150],B:[170,132],C:[425,71]},ans:{tumpu:'A',beban:'B',kuasa:'C'},jenis:2,
+   why:'Beban (tepi tutup) berada di antara titik tumpu dan kuasa, jadi ini tuas jenis 2. KM lebih dari 1 sehingga tutup mudah terbuka.',
+   art:'<rect x="88" y="170" width="52" height="66" class="f-glass"/><rect x="62" y="150" width="120" height="20" rx="4" class="f-metal"/>'+
+     '<line x1="75" y1="160" x2="170" y2="160" class="s-ink" stroke-width="1" opacity=".4"/>'+
+     '<path d="M170 132 L172 166 L162 170" stroke-width="6" class="s-metal"/>'+
+     '<line x1="95" y1="150" x2="430" y2="70" class="s-metal" stroke-width="12" stroke-linecap="round"/>'+
+     '<ellipse cx="440" cy="62" rx="18" ry="13" class="f-skin"/>'},
+  {name:'Gunting',task:'Gunting memotong selembar kertas di dekat ujung bilahnya.',
+   pts:{A:'mata gunting yang memotong kertas',B:'sekrup yang menyatukan kedua bilah',C:'pegangan tempat jari menekan'},
+   pos:{A:[110,98],B:[250,120],C:[400,144]},ans:{tumpu:'B',beban:'A',kuasa:'C'},jenis:1,
+   why:'Titik tumpu (sekrup) berada di antara beban dan kuasa, jadi gunting adalah tuas jenis 1. Gunting tersusun dari dua tuas yang saling bersilang.',
+   art:'<rect x="24" y="112" width="132" height="16" class="f-paper s-ink" stroke-width="2"/>'+
+     '<line x1="60" y1="150" x2="440" y2="90" class="s-metal" stroke-width="9" stroke-linecap="round"/>'+
+     '<line x1="60" y1="90" x2="440" y2="150" class="s-metal" stroke-width="9" stroke-linecap="round"/>'+
+     '<circle cx="454" cy="160" r="16" fill="none" class="s-ink" stroke-width="6"/><circle cx="454" cy="80" r="16" fill="none" class="s-ink" stroke-width="6"/>'+
+     '<circle cx="250" cy="120" r="7" class="f-ink"/>'},
+  {name:'Sekop',task:'Sekop mengangkat tanah yang ada di ujungnya.',
+   pts:{A:'ujung gagang, tangan yang hampir diam',B:'tengah gagang, tangan yang mengangkat',C:'ujung sekop yang berisi tanah'},
+   pos:{A:[70,70],B:[230,109],C:[405,151]},ans:{tumpu:'A',beban:'C',kuasa:'B'},jenis:3,
+   why:'Kuasa (tangan di tengah gagang) berada di antara titik tumpu dan beban, jadi ini tuas jenis 3. Gaya lebih besar dari berat tanah, tetapi tanah terangkat jauh dan cepat.',
+   art:'<line x1="20" y1="214" x2="460" y2="214" class="s-ground" stroke-width="3"/><path d="M300 214 Q380 160 470 214 Z" class="f-soil"/>'+
+     '<line x1="70" y1="70" x2="405" y2="151" class="s-wood" stroke-width="10" stroke-linecap="round"/>'+
+     '<polygon points="380,140 440,158 430,200 372,186" class="f-metal"/><ellipse cx="410" cy="146" rx="22" ry="10" class="f-soil"/>'+
+     '<rect x="52" y="58" width="38" height="22" rx="8" class="f-ink"/>'+
+     '<circle cx="70" cy="70" r="14" class="f-skin s-ink" stroke-width="2"/><circle cx="230" cy="109" r="14" class="f-skin s-ink" stroke-width="2"/>'}
+];
+const IDS=IT.map(()=>({a:{tumpu:null,beban:null,kuasa:null},role:'tumpu',attempts:0,stage:'assign',res:null,jtry:0,jfb:''}));
+let cur=0, focusKey=null;
+const roleOf=(a,p)=>Object.keys(a).find(k=>a[k]===p)||null;
+function renderId(){
+  const it=IT[cur], st=IDS[cur];
+  const dots=IT.map((x,i)=>`<button class="dot${i===cur?' on':''}${IDS[i].stage==='done'?' ok':''}" data-act="goto" data-i="${i}" aria-label="Alat ${i+1}: ${x.name}"${i===cur?' aria-current="true"':''}>${i+1}</button>`).join('');
+  const pts=Object.entries(it.pos).map(([k,[x,y]])=>{
+    const r=roleOf(st.a,k);
+    return `<g class="pt${r?' has '+r:''}" data-act="pt" data-p="${k}" data-fk="pt-${k}" tabindex="0" role="button" aria-label="Titik ${k}: ${it.pts[k]}${r?', dipilih sebagai '+ROLE[r].n:''}">`+
+      `<circle cx="${x}" cy="${y}" r="17" class="pt-c"/><text x="${x}" y="${y+5}" text-anchor="middle" class="pt-l">${k}</text></g>`+
+      (r?`<text x="${x}" y="${y-26}" class="tag tag-${r}">${ROLE[r].n}</text>`:'');
+  }).join('');
+  const legend=Object.entries(it.pts).map(([k,v])=>`<li><b>${k}</b> ${v}</li>`).join('');
+  const chips=['tumpu','beban','kuasa'].map(r=>`<button class="role ${r}" data-act="role" data-r="${r}" data-fk="role-${r}" aria-pressed="${st.role===r}"><i></i>${ROLE[r].n}${st.a[r]?' = '+st.a[r]:''}</button>`).join('');
+  let body='';
+  if(st.stage==='assign'){
+    const ready=Object.values(st.a).every(Boolean);
+    let fb='';
+    if(st.res){
+      fb='<ul class="fblist" aria-live="polite">'+['tumpu','beban','kuasa'].map(r=>`<li class="${st.res[r]?'ok':'bad'}">${st.res[r]?'✓':'✗'} ${ROLE[r].n} = ${st.a[r]}${st.res[r]?'':' (belum tepat)'}</li>`).join('')+'</ul>';
+      if(st.attempts>=1) fb+='<p class="cap">Petunjuk: titik tumpu adalah titik putar yang tidak berpindah. Beban adalah benda yang dilawan atau dipindahkan. Kuasa adalah tempat tangan memberi gaya.</p>';
+    }
+    body=`<div><div class="lbl">1. Pilih peran, lalu ketuk titik pada gambar</div><div class="roles" style="margin-top:.4rem">${chips}</div></div>`+
+      `<div class="seg"><button class="btn primary" data-act="check" data-fk="check"${ready?'':' disabled'}>Periksa jawaban</button>`+
+      (st.attempts>=2?'<button class="btn" data-act="reveal">Tampilkan jawaban</button>':'')+'</div>'+fb;
+  } else if(st.stage==='jenis'){
+    body=`<div class="lbl">2. Pembagian peran sudah benar. Termasuk tuas jenis berapa alat ini?</div>`+
+      `<div class="seg">${[1,2,3].map(n=>`<button class="btn" data-act="jenis" data-n="${n}" data-fk="j${n}">Tuas jenis ${n}</button>`).join('')}</div>`+
+      `<p class="fb bad" aria-live="polite">${st.jfb}</p>`;
+  } else {
+    const last=IDS.every(s=>s.stage==='done');
+    body=`<p class="chip ok" style="width:fit-content">Benar: tuas jenis ${it.jenis}</p><p>${it.why}</p>`+
+      `<div class="seg"><button class="btn primary" data-act="next" data-fk="next">${cur<IT.length-1?'Alat berikutnya':'Ulangi dari alat pertama'}</button></div>`+
+      (last?'<p class="callout">Semua alat sudah dikenali. Lanjutkan ke bagian Bidang miring.</p>':'');
+  }
+  $('#id-card').innerHTML=
+    `<div style="display:grid;gap:.9rem"><div class="sub"><h2>${it.name}</h2><div class="dots">${dots}</div></div>`+
+    `<p><b>Tugas:</b> ${it.task}</p>`+
+    `<svg class="svg" viewBox="0 0 480 240" role="img" aria-label="Gambar ${it.name} dengan tiga titik berlabel A, B, dan C">${it.art}${pts}</svg>`+
+    body+'</div>';
+  $('#id-side').innerHTML=
+    `<h2>Keterangan titik</h2><ul class="order" style="list-style:none">${legend}</ul>`+
+    `<details class="note"><summary>Kartu bantu jenis tuas</summary><ul class="order">`+
+    `<li><b>Jenis 1:</b> beban, tumpu, kuasa. Tumpu di antara.</li><li><b>Jenis 2:</b> tumpu, beban, kuasa. Beban di antara.</li><li><b>Jenis 3:</b> tumpu, kuasa, beban. Kuasa di antara.</li></ul></details>`+
+    `<p class="cap">Selesai: ${IDS.filter(s=>s.stage==='done').length} dari ${IT.length} alat.</p>`;
+  if(focusKey){ const f=$(`[data-fk="${focusKey}"]`); if(f&&!f.disabled) f.focus(); }
+}
+function fk(t){ const f=t.closest('[data-fk]'); focusKey=f?f.dataset.fk:null; }
+ACT.goto=t=>{cur=+t.dataset.i;focusKey=null;renderId();};
+ACT.role=t=>{fk(t);IDS[cur].role=t.dataset.r;renderId();};
+ACT.pt=t=>{
+  const st=IDS[cur]; if(st.stage!=='assign') return;
+  fk(t);
+  const p=t.dataset.p;
+  for(const k in st.a) if(st.a[k]===p) st.a[k]=null;
+  st.a[st.role]=p; st.res=null;
+  const nxt=['tumpu','beban','kuasa'].find(k=>!st.a[k]); if(nxt) st.role=nxt;
+  renderId();
+};
+ACT.check=t=>{
+  const st=IDS[cur], it=IT[cur]; fk(t);
+  st.attempts++;
+  st.res={}; let all=true;
+  for(const r of ['tumpu','beban','kuasa']){ st.res[r]=st.a[r]===it.ans[r]; if(!st.res[r]) all=false; }
+  if(all){ st.stage='jenis'; focusKey='j1'; }
+  renderId();
+};
+ACT.reveal=()=>{const st=IDS[cur];st.a={...IT[cur].ans};st.stage='jenis';focusKey='j1';renderId();};
+ACT.jenis=t=>{
+  const st=IDS[cur], it=IT[cur], n=+t.dataset.n; fk(t);
+  if(n===it.jenis){ st.stage='done'; focusKey='next'; if(IDS.every(s=>s.stage==='done')) mark('tuas'); }
+  else { st.jtry++; st.jfb='Belum tepat. Lihat titik mana yang berada di antara dua titik lainnya.'; }
+  renderId();
+};
+ACT.next=()=>{cur=(cur+1)%IT.length;focusKey=null;renderId();};
+renderId();
+
+/* ---------- Bidang miring ---------- */
+const MI={s:2,u:0,busy:false,won:false};
+const WM=1000, LIM=250;
+function miDraw(){
+  const S=68, gy=246, ty=gy-S, xe=590;
+  const run=Math.sqrt(MI.s*MI.s-1), xs=xe-run*S;
+  const al=Math.atan2(S,run*S), ad=al*180/Math.PI, ca=Math.cos(al), sa=Math.sin(al);
+  let g='<rect x="0" y="246" width="700" height="34" class="f-ground"/>';
+  g+=`<polygon points="${xs},${gy} ${xe},${ty} ${xe},${gy}" class="f-soft" opacity=".7"/>`;
+  g+=`<rect x="${xe}" y="${ty}" width="${700-xe}" height="14" rx="3" class="f-metal"/><rect x="${xe}" y="${ty+14}" width="${700-xe}" height="28" class="f-ink" opacity=".75"/>`;
+  g+=`<circle cx="650" cy="224" r="22" class="f-paper s-ink" stroke-width="8"/>`;
+  g+=`<line x1="${xs}" y1="${gy}" x2="${xe}" y2="${ty}" class="s-wood" stroke-width="9" stroke-linecap="round"/>`;
+  g+=`<line x1="${xe-14}" y1="${ty}" x2="${xe-14}" y2="${gy}" class="s-ink" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+  g+=`<text x="${xe-20}" y="${(ty+gy)/2+4}" text-anchor="end" class="sv-m">h = 1 m</text>`;
+  const mx=(xs+xe)/2, my=(gy+ty)/2;
+  g+=`<text x="${mx+26*sa}" y="${my+26*ca+14}" text-anchor="middle" class="sv-m t-beban">s = ${fmt(MI.s,1)} m</text>`;
+  /* posisi drum */
+  const u=MI.u; let cx,cy,rot,arrow=true;
+  if(u<=0.9){ const k=u/0.9, f=0.08+0.84*k; cx=xs+(xe-xs)*f; cy=gy+(ty-gy)*f; rot=-ad; }
+  else { const k=(u-0.9)/0.1, f=0.92; const x1=xs+(xe-xs)*f, y1=gy+(ty-gy)*f; cx=x1+(xe+34-x1)*k; cy=y1+(ty-y1)*k; rot=-ad*(1-k); arrow=false; }
+  const ok=WM/MI.s<=LIM;
+  g+=`<g transform="translate(${cx},${cy}) rotate(${rot})"><rect x="-19" y="-52" width="38" height="48" rx="6" class="f-beban-s s-beban" stroke-width="3"/>`+
+     `<line x1="-19" y1="-38" x2="19" y2="-38" class="s-beban" stroke-width="1.5"/><line x1="-19" y1="-20" x2="19" y2="-20" class="s-beban" stroke-width="1.5"/>`+
+     (arrow?`<line x1="-86" y1="-26" x2="-26" y2="-26" class="${ok?'s-kuasa':'s-beban'}" stroke-width="5"/><polygon points="-28,-35 -28,-17 -14,-26" class="${ok?'f-kuasa':'f-beban'}"/>`:'')+`</g>`;
+  if(arrow){
+    const rad=-rot*Math.PI/180, c=Math.cos(rad), s2=Math.sin(rad);
+    const lx=cx+(-78)*c+(-40)*s2, ly=cy+(-78)*(-s2)+(-40)*c;
+    g+=`<text x="${lx}" y="${ly}" text-anchor="middle" class="sv-m ${ok?'t-kuasa':'t-beban'}">F = ${fmt(WM/MI.s)} N</text>`;
+  }
+  $('#mi-svg').innerHTML=g;
+  const F=WM/MI.s;
+  $('#mi-sv').textContent=fmt(MI.s,1)+' m';
+  $('#mi-chip').innerHTML=`<span class="chip ${F<=LIM?'ok':'bad'}">${F<=LIM?'Gaya cukup, Pak Budi sanggup':'Gaya terlalu besar, melebihi 250 N'}</span>`;
+  $('#mi-ro').innerHTML=
+    `<div><dt>Gaya dorong F</dt><dd>${fmt(F,0)} N</dd></div>`+
+    `<div><dt>KM = s ÷ h</dt><dd>${fmt(MI.s,1)}</dd></div>`+
+    `<div><dt>Jarak dorong</dt><dd>${fmt(MI.s,1)} m</dd></div>`+
+    `<div><dt>Usaha = F × s</dt><dd>${fmt(F*MI.s)} J</dd></div>`;
+}
+function miAnim(){
+  if(MI.busy) return;
+  const F=WM/MI.s, ok=F<=LIM, fb=$('#mi-fb');
+  MI.busy=true; $('#mi-go').disabled=true;
+  fb.className='fb'; fb.textContent='';
+  const dur=ok?2400:1400, t0=performance.now();
+  function end(){
+    MI.busy=false; $('#mi-go').disabled=false;
+    if(ok){ MI.u=1; fb.className='fb ok'; fb.textContent=`Berhasil. Gaya ${fmt(F)} N sudah cukup. Drum naik setinggi 1 m setelah didorong sejauh ${fmt(MI.s,1)} m.`; if(!MI.won){MI.won=true;mark('bidang-miring');} }
+    else { MI.u=0; fb.className='fb bad'; fb.textContent=`Tidak kuat. Dibutuhkan ${fmt(F)} N. Perpanjang papan sampai gayanya 250 N atau kurang.`; }
+    miDraw();
+  }
+  if(reduce){ end(); return; }
+  (function step(now){
+    const p=clamp((now-t0)/dur,0,1);
+    MI.u = ok ? p : Math.sin(p*Math.PI)*0.12;
+    miDraw();
+    if(p<1) requestAnimationFrame(step); else end();
+  })(t0);
+}
+$('#mi-s').addEventListener('input',e=>{ if(MI.busy) return; MI.s=+e.target.value; MI.u=0; $('#mi-fb').textContent=''; miDraw(); });
+$('#mi-go').addEventListener('click',miAnim);
+$('#mi-reset').addEventListener('click',()=>{ if(MI.busy) return; MI.u=0; $('#mi-fb').textContent=''; miDraw(); });
+$$('#mi-pred button').forEach(b=>b.addEventListener('click',()=>{
+  const p=b.dataset.p, fb=$('#mi-predfb');
+  fb.className='fb '+(p==='b'?'ok':'bad');
+  fb.textContent=p==='b'
+    ?'Tepat. Papan 4 m butuh 250 N, papan 2 m butuh 500 N. Buktikan dengan geser panjang papan di bawah.'
+    :'Belum tepat. Papan yang lebih panjang lebih landai, sehingga gayanya lebih kecil. Buktikan dengan geser panjang papan di bawah.';
+}));
+miDraw();
+
+/* ---------- Katrol ---------- */
+const KT=[
+  {id:'tetap',name:'Katrol tetap',n:1,note:'Katrol tetap hanya mengubah arah gaya. Tali ditarik ke bawah, beban naik ke atas, tetapi gayanya sama dengan berat beban.'},
+  {id:'gerak',name:'Katrol bergerak',n:2,note:'Beban ditopang 2 tali, sehingga gaya tarik setengah dari berat beban. Tali harus ditarik 2 kali lebih panjang.'},
+  {id:'takal3',name:'Takal 3 tali',n:3,note:'Takal menggabungkan katrol tetap dan katrol bergerak. Ada 3 tali yang menopang beban, jadi KM = 3.'},
+  {id:'takal4',name:'Takal 4 tali',n:4,note:'Ada 4 tali yang menopang beban, jadi KM = 4. Tali pada ujung yang ditarik tangan tidak ikut dihitung.'}
+];
+const KA={t:0,W:120,p:50,seen:new Set([0]),busy:false};
+function kLoad(x,top){
+  return `<line x1="${x}" y1="${top}" x2="${x}" y2="${top+12}" class="s-ink" stroke-width="3"/>`+
+    `<rect x="${x-30}" y="${top+12}" width="60" height="44" rx="6" class="f-beban-s s-beban" stroke-width="3"/>`+
+    `<text x="${x}" y="${top+39}" class="ld">${KA.W} N</text>`;
+}
+function kHand(x,y,dir,F){
+  const tri=dir==='down'?`${x-9},${y+16} ${x+9},${y+16} ${x},${y+30}`:`${x-9},${y-16} ${x+9},${y-16} ${x},${y-30}`;
+  return `<circle cx="${x}" cy="${y}" r="10" class="f-kuasa"/><polygon points="${tri}" class="f-kuasa"/>`+
+    `<text x="${x+16}" y="${y+5}" class="sv-m t-kuasa">F = ${fmt(F,0)} N</text>`;
+}
+function kBadge(x,y,i){ return `<circle cx="${x}" cy="${y}" r="10" class="f-kuasa"/><text x="${x}" y="${y+4}" text-anchor="middle" class="bd">${i}</text>`; }
+function kDraw(){
+  const T=KT[KA.t], n=T.n, H=KA.p/100*44, cx=180, F=KA.W/n;
+  let s='<rect x="40" y="10" width="280" height="8" rx="2" class="f-metal"/>';
+  if(n===1){
+    const cy=84, lx=cx-22, rx=cx+22, yl=300-H, yh=170+H;
+    s+=`<line x1="${cx}" y1="18" x2="${cx}" y2="62" class="s-metal" stroke-width="5"/>`;
+    s+=`<line x1="${lx}" y1="${cy}" x2="${lx}" y2="${yl}" class="s-rope"/><line x1="${rx}" y1="${cy}" x2="${rx}" y2="${yh}" class="s-rope"/>`;
+    s+=`<circle cx="${cx}" cy="${cy}" r="22" class="f-paper s-ink" stroke-width="4"/><circle cx="${cx}" cy="${cy}" r="4" class="f-ink"/>`;
+    s+=kLoad(lx,yl)+kHand(rx,yh,'down',F)+kBadge(lx,(cy+yl)/2,1);
+  } else if(n===2){
+    const ax=cx-22, bx=cx+22, yM=250-H, yh=150-2*H;
+    s+=`<rect x="${ax-6}" y="18" width="12" height="8" class="f-ink"/>`;
+    s+=`<line x1="${ax}" y1="26" x2="${ax}" y2="${yM}" class="s-rope"/><path d="M${ax} ${yM} A22 22 0 0 0 ${bx} ${yM}" class="s-rope"/><line x1="${bx}" y1="${yM}" x2="${bx}" y2="${yh}" class="s-rope"/>`;
+    s+=`<circle cx="${cx}" cy="${yM}" r="22" class="f-paper s-ink" stroke-width="4"/><circle cx="${cx}" cy="${yM}" r="4" class="f-ink"/>`;
+    s+=kLoad(cx,yM+22)+kHand(bx,yh,'up',F)+kBadge(ax,(26+yM)/2,1)+kBadge(bx,(yM+yh)/2+14,2);
+  } else {
+    const f=Math.ceil(n/2), m=Math.floor(n/2), bw=n*24+16, yM=240-H, yh=150+n*H;
+    const xs=i=>cx+(i-(n-1)/2)*24, tx=cx+bw/2+16, x0=cx-bw/2;
+    s+=`<line x1="${x0+6}" y1="18" x2="${x0+6}" y2="44" class="s-metal" stroke-width="4"/><line x1="${x0+bw-6}" y1="18" x2="${x0+bw-6}" y2="44" class="s-metal" stroke-width="4"/>`;
+    for(let i=0;i<n;i++) s+=`<line x1="${xs(i)}" y1="72" x2="${xs(i)}" y2="${yM}" class="s-rope"/>`;
+    s+=`<line x1="${x0+bw}" y1="58" x2="${tx}" y2="58" class="s-rope"/><line x1="${tx}" y1="58" x2="${tx}" y2="${yh}" class="s-rope"/>`;
+    s+=`<rect x="${x0}" y="44" width="${bw}" height="28" rx="6" class="f-metal"/><rect x="${x0}" y="${yM}" width="${bw}" height="28" rx="6" class="f-metal"/>`;
+    for(let i=0;i<f;i++) s+=`<circle cx="${cx+(i-(f-1)/2)*26}" cy="58" r="10" class="f-paper s-ink" stroke-width="2.5"/>`;
+    for(let i=0;i<m;i++) s+=`<circle cx="${cx+(i-(m-1)/2)*26}" cy="${yM+14}" r="10" class="f-paper s-ink" stroke-width="2.5"/>`;
+    for(let i=0;i<n;i++) s+=kBadge(xs(i),(72+yM)/2,i+1);
+    s+=kLoad(cx,yM+28)+kHand(tx,yh,'down',F);
+  }
+  $('#ka-svg').innerHTML=s;
+  const h=KA.p/100*22, sd=n*h;
+  $('#ka-pv').textContent=KA.p+'%';
+  $('#ka-chip').innerHTML=`<span class="chip info">${T.name}: KM = ${n}</span>`;
+  $('#ka-ro').innerHTML=
+    `<div><dt>Tali penopang beban</dt><dd>${n}</dd></div>`+
+    `<div><dt>Gaya tarik F = W ÷ KM</dt><dd>${fmt(F,0)} N</dd></div>`+
+    `<div><dt>Beban naik h</dt><dd>${fmt(h,1)} cm</dd></div>`+
+    `<div><dt>Tali ditarik s = KM × h</dt><dd>${fmt(sd,1)} cm</dd></div>`;
+  $('#ka-note').textContent=T.note;
+  $('#ka-tbl').innerHTML='<thead><tr><th>Jenis</th><th>KM</th><th>Gaya tarik</th></tr></thead><tbody>'+
+    KT.map((k,i)=>`<tr class="${i===KA.t?'sel':''}"><td>${k.name}</td><td class="mono">${k.n}</td><td class="mono">${fmt(KA.W/k.n,0)} N</td></tr>`).join('')+'</tbody>';
+}
+$('#ka-type').innerHTML=KT.map((k,i)=>`<button class="btn" data-t="${i}" aria-pressed="${i===0}">${k.name}</button>`).join('');
+$$('#ka-type button').forEach(b=>b.addEventListener('click',()=>{
+  KA.t=+b.dataset.t; KA.seen.add(KA.t);
+  $$('#ka-type button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  if(KA.seen.size>=KT.length) mark('katrol');
+  kDraw();
+}));
+$$('#ka-load button').forEach(b=>b.addEventListener('click',()=>{
+  KA.W=+b.dataset.w;
+  $$('#ka-load button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  kDraw();
+}));
+$('#ka-p').addEventListener('input',e=>{KA.p=+e.target.value;kDraw();});
+$('#ka-auto').addEventListener('click',()=>{
+  if(KA.busy) return;
+  if(reduce){KA.p=100;$('#ka-p').value=100;kDraw();return;}
+  KA.busy=true; const t0=performance.now();
+  (function step(now){
+    const p=clamp((now-t0)/2200,0,1);
+    KA.p=Math.round(p*100); $('#ka-p').value=KA.p; kDraw();
+    if(p<1) requestAnimationFrame(step); else KA.busy=false;
+  })(t0);
+});
+kDraw();
+
+/* ---------- Kuis ---------- */
+const QZ=[
+  {t:'Konsep',q:'Pernyataan mana yang paling tepat tentang pesawat sederhana?',o:['Alat yang mengurangi besar usaha','Alat sederhana yang memudahkan pekerjaan dengan mengubah besar gaya, arah gaya, atau jarak','Mesin yang menghasilkan energi sendiri','Alat yang hanya bekerja dengan listrik'],a:1,w:'Pesawat sederhana tidak mengurangi usaha. Usaha = gaya × jarak tetap, tetapi gaya, arah, atau jaraknya bisa diatur.'},
+  {t:'Konsep',q:'Dengan papan miring, gaya dorong menjadi 4 kali lebih kecil. Apa akibatnya?',o:['Usaha menjadi 4 kali lebih kecil','Jarak yang ditempuh menjadi 4 kali lebih panjang','Berat beban menjadi lebih ringan','Waktu menjadi 4 kali lebih singkat'],a:1,w:'Usaha tetap. Gaya 4 kali lebih kecil berarti jarak 4 kali lebih panjang.'},
+  {t:'Tuas',q:'Pada gerobak dorong, beban (isi gerobak) berada di antara roda dan pegangan. Gerobak termasuk tuas jenis ke...',o:['1','2','3','Bukan tuas'],a:1,w:'Beban berada di antara titik tumpu (roda) dan kuasa (pegangan), itu ciri tuas jenis 2.'},
+  {t:'Tuas',q:'Pada tuas jenis 3 seperti pinset, keuntungan mekanisnya...',o:['lebih dari 1','sama dengan 1','kurang dari 1','selalu 2'],a:2,w:'Lengan kuasa lebih pendek dari lengan beban, sehingga KM kurang dari 1. Gaya lebih besar, tetapi ujung bergerak lebih jauh dan teliti.'},
+  {t:'Tuas',q:'Beban 300 N berada 20 cm dari titik tumpu. Kuasa berada 60 cm dari titik tumpu. Berapa gaya kuasa agar seimbang?',o:['100 N','900 N','150 N','360 N'],a:0,w:'F = (W × lengan beban) ÷ lengan kuasa = (300 × 20) ÷ 60 = 100 N.'},
+  {t:'Bidang miring',q:'Drum 800 N dinaikkan setinggi 1 m dengan papan miring sepanjang 4 m (gesekan diabaikan). Gaya yang diperlukan...',o:['200 N','3.200 N','800 N','400 N'],a:0,w:'F = (W × h) ÷ s = (800 × 1) ÷ 4 = 200 N. KM = 4.'},
+  {t:'Bidang miring',q:'Mengapa jalan di daerah pegunungan dibuat berkelok-kelok?',o:['Agar usaha kendaraan menjadi lebih besar','Agar lintasan lebih panjang sehingga tanjakan lebih landai dan gaya lebih kecil','Agar gunung menjadi lebih rendah','Agar kendaraan lebih cepat sampai'],a:1,w:'Lintasan yang lebih panjang membuat bidang miring lebih landai, sehingga gaya yang diperlukan kendaraan lebih kecil.'},
+  {t:'Katrol',q:'Fungsi utama katrol tetap adalah...',o:['Mengubah arah gaya','Memperkecil gaya menjadi setengah','Memperbesar gaya 2 kali','Mengurangi usaha'],a:0,w:'Katrol tetap memiliki KM = 1. Gaya sama dengan berat beban, tetapi arah tarikan berubah.'},
+  {t:'Katrol',q:'Sebuah takal memiliki 4 tali yang menopang beban 240 N. Gaya tarik minimal...',o:['60 N','960 N','240 N','120 N'],a:0,w:'KM = jumlah tali penopang = 4. F = 240 ÷ 4 = 60 N.'},
+  {t:'Katrol',q:'Beban dinaikkan 0,5 m dengan takal ber-KM 4. Panjang tali yang harus ditarik...',o:['0,125 m','0,5 m','1 m','2 m'],a:3,w:'Jarak tarik = KM × tinggi = 4 × 0,5 m = 2 m.'}
+];
+const TOPICS=['Konsep','Tuas','Bidang miring','Katrol'];
+let qs=[],qi=0,qans=[],qmode='intro',qpick=-1;
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function qStart(){
+  qs=QZ.map(q=>{const idx=shuffle(q.o.map((_,i)=>i));return {t:q.t,q:q.q,w:q.w,o:idx.map(i=>q.o[i]),a:idx.indexOf(q.a)};});
+  qi=0;qans=[];qpick=-1;qmode='q';qRender();
+}
+function qRender(){
+  const box=$('#qz');
+  if(qmode==='intro'){
+    box.innerHTML=`<p style="max-width:65ch">10 soal pilihan ganda tentang konsep, tuas, bidang miring, dan katrol. Setiap jawaban langsung dibahas. Ringkasan rumus:</p>`+
+      `<div class="scroll-x"><table><thead><tr><th>Pesawat</th><th>Keuntungan mekanis (KM)</th><th>Rumus gaya</th></tr></thead><tbody>`+
+      `<tr><td>Tuas</td><td class="mono">lengan kuasa ÷ lengan beban</td><td class="mono">F = W × lb ÷ lk</td></tr>`+
+      `<tr><td>Bidang miring</td><td class="mono">panjang ÷ tinggi</td><td class="mono">F = W × h ÷ s</td></tr>`+
+      `<tr><td>Katrol</td><td class="mono">jumlah tali penopang</td><td class="mono">F = W ÷ n</td></tr></tbody></table></div>`+
+      `<div class="seg"><button class="btn primary" data-act="qstart" data-fk="qs">Mulai kuis</button></div>`;
+    return;
+  }
+  if(qmode==='end'){
+    const sc=qans.filter(x=>x.ok).length;
+    const by=TOPICS.map(t=>{const l=qs.map((q,i)=>[q,qans[i]]).filter(([q])=>q.t===t);return {t,n:l.length,c:l.filter(([,a])=>a&&a.ok).length};});
+    const weak=by.filter(b=>b.c<b.n).map(b=>b.t);
+    const msg=sc>=9?'Sangat baik. Konsepmu sudah kuat.':sc>=7?'Baik. Perkuat sedikit bagian yang masih salah.':'Ulangi simulasi pada bagian yang masih salah, lalu coba kuis lagi.';
+    box.innerHTML=`<div><div class="eyebrow">Skor akhir</div><div class="score">${sc} / ${qs.length}</div><p>${msg}</p></div>`+
+      `<div class="rec">${by.map(b=>`<div class="rec-r"><span>${b.t}</span><div class="bar"><i class="${b.c===b.n?'ok':'bad'}" style="width:${b.c/b.n*100}%"></i></div><b class="mono">${b.c}/${b.n}</b></div>`).join('')}</div>`+
+      (weak.length?`<p class="cap">Perlu diulang: ${weak.join(', ')}.</p>`:'')+
+      `<div><h3>Pembahasan soal yang salah</h3><ul class="fblist" style="margin-top:.5rem">${qs.map((q,i)=>qans[i].ok?'':`<li><b>${i+1}. ${q.q}</b><br>Jawaban benar: ${q.o[q.a]}. ${q.w}</li>`).join('')||'<li class="ok">Semua soal benar.</li>'}</ul></div>`+
+      `<div class="seg"><button class="btn primary" data-act="qstart" data-fk="qs">Ulangi kuis</button></div>`;
+    return;
+  }
+  const q=qs[qi], ans=qans[qi], answered=!!ans;
+  const prog=qs.map((_,i)=>`<i class="${qans[i]?(qans[i].ok?'ok':'bad'):i===qi?'now':''}"></i>`).join('');
+  box.innerHTML=`<div class="qprog" aria-hidden="true">${prog}</div>`+
+    `<div class="sub"><span class="chip info">${q.t}</span><span class="cap">Soal ${qi+1} dari ${qs.length}</span></div>`+
+    `<h2 style="font-weight:500">${q.q}</h2>`+
+    `<div class="qopts">${q.o.map((o,i)=>{let c='';if(answered){if(i===q.a)c=' ok';else if(i===ans.pick)c=' bad';}return `<button class="qo${c}" data-act="qpick" data-i="${i}"${answered?' disabled':''}>${o}</button>`;}).join('')}</div>`+
+    (answered?`<p class="fb ${ans.ok?'ok':'bad'}" aria-live="polite"><b>${ans.ok?'Benar.':'Belum tepat.'}</b> ${q.w}</p><div class="seg"><button class="btn primary" data-act="qnext" data-fk="qn">${qi<qs.length-1?'Soal berikutnya':'Lihat skor'}</button></div>`:'');
+}
+ACT.qstart=()=>qStart();
+ACT.qpick=t=>{ if(qans[qi]) return; const i=+t.dataset.i; qans[qi]={pick:i,ok:i===qs[qi].a}; qRender(); const n=$('[data-fk="qn"]'); if(n) n.focus(); };
+ACT.qnext=()=>{ if(qi<qs.length-1){qi++;} else {qmode='end';mark('kuis');} qRender(); };
+qRender();
+
+renderTabs();
+fromHash();
+})();
+</script>
