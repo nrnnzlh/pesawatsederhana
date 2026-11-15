@@ -1,0 +1,2149 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- revisi: kontrol tuas berdampingan; batas slider gaya mengikuti kebutuhan; label kuasa di samping panah -->
+<title>Lab Pesawat Sederhana</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600&family=Lexend:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Konsep tata letak: lembar kerja laboratorium di atas kertas berpetak. Panggung simulasi di kiri, hasil ukur dan rumus di kanan; bertumpuk di HP. Warna peran tetap: tumpu = ungu, beban = oranye, kuasa = hijau toska. */
+:root{
+  --font-display:'Lexend','Segoe UI',system-ui,sans-serif;
+  --font-body:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+  --bg:#E6F5FF; --grid:#D3ECFA; --paper:#FFFFFF; --fg:#13263A; --muted:#44607A; --line:#BFDDF0;
+  --brand:#0A6CB0; --brand-soft:#D6EEFF; --on-solid:#FFFFFF;
+  --tumpu:#6340E0; --tumpu-soft:#ECE6FF;
+  --beban:#B84F08; --beban-soft:#FFEBD6;
+  --kuasa:#05766B; --kuasa-soft:#D4F6F0;
+  --ok:#14753D; --ok-soft:#DAF7E4; --bad:#C02A22; --bad-soft:#FFE1DD;
+  --wood:#C29359; --wood2:#8F6531; --metal:#7C909F; --ground:#CBD7DE; --skin:#E9B999; --soil:#8A6A47; --glass:#BDE6F7; --sky:#8ED3F5; --sky-soft:#EAF8FF; --hill:#B79C66; --hill2:#7DB24E; --rock:#8A939B; --rock2:#6A737B; --road:#5E6B75;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{font-size:16px}
+:root.big{font-size:20px}
+body{background-color:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:1rem;line-height:1.55;
+  background-image:radial-gradient(60rem 28rem at 100% -4%,rgba(255,213,99,.50),transparent 62%),radial-gradient(52rem 30rem at -8% 24%,rgba(110,208,255,.50),transparent 62%),radial-gradient(44rem 30rem at 96% 104%,rgba(140,232,185,.45),transparent 62%),radial-gradient(rgba(10,108,176,.11) 1.5px,transparent 1.7px);
+  background-size:auto,auto,auto,22px 22px;background-repeat:no-repeat,no-repeat,no-repeat,repeat;background-attachment:fixed,fixed,fixed,scroll}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--font-display);font-weight:600;line-height:1.2;margin:0;text-wrap:balance}
+h1{font-size:clamp(1.45rem,1.05rem + 1.7vw,2.1rem)}
+h2{font-size:1.2rem}
+h3{font-size:1rem}
+p{margin:0}
+.eyebrow{font:600 .78rem var(--font-body);letter-spacing:.08em;text-transform:uppercase;color:var(--brand)}
+.lead{max-width:65ch;color:var(--muted);font-size:1.05rem}
+.muted{color:var(--muted)}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+
+/* header */
+.hd{position:sticky;top:env(safe-area-inset-top,0px);z-index:11;background:var(--paper);border-bottom:1px solid var(--line);box-shadow:0 6px 18px -12px rgba(10,108,176,.45)}
+.hd::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:4px;background:linear-gradient(90deg,#FFC93C,#FF8A4C,#7B5CF0,#19B8A6,#38B6FF)}
+.hd-in{display:flex;align-items:center;gap:.9rem;padding-block:.35rem}
+.brand{display:flex;align-items:center;gap:.55rem;min-width:0;flex:0 0 auto}
+.brand svg{flex:0 0 auto;width:30px;height:30px}
+.brand-t{font:600 1rem var(--font-display);white-space:nowrap;line-height:1.15}
+.brand-s{font-size:.72rem;color:var(--muted);line-height:1.1}
+.tabs{flex:1 1 auto;min-width:0;display:flex;justify-content:center;gap:.2rem;overflow-x:auto;scrollbar-width:none}
+.tab{position:relative;flex:0 0 auto;display:flex;align-items:center;gap:.45rem;min-height:40px;padding:.3rem .8rem;border:0;border-radius:10px;background:none;color:var(--muted);font:inherit;font-weight:600;font-size:.92rem;cursor:pointer;white-space:nowrap}
+.tab svg{width:20px;height:20px;flex:0 0 auto}
+.tab:hover{color:var(--fg);background:var(--grid)}
+.tab[aria-selected="true"]{color:var(--brand);background:var(--brand-soft)}
+.tab .ts{display:none}
+.tab-ck{display:grid;place-items:center;width:16px;height:16px;border-radius:50%;background:var(--ok);color:var(--on-solid);font-size:.65rem;font-weight:700}
+.tab:focus-visible{outline-offset:-2px}
+/* musik */
+.mus{display:flex;align-items:center;gap:.45rem;flex:0 0 auto}
+.mus .btn{display:flex;align-items:center;gap:.4rem;padding:.5rem .8rem}
+.mus svg{width:18px;height:18px;flex:0 0 auto}
+.mus input[type=range]{width:76px;min-width:0}
+@media (min-width:861px) and (max-width:1280px){.mus input[type=range]{display:none}.tab{padding-left:.5rem;padding-right:.5rem;gap:0}.tab>svg{display:none}}
+@media (max-width:760px){.mus input[type=range],.mus .mt{display:none}.mus .btn{padding:.5rem .65rem}}
+
+/* soal kasus nyata */
+.soal{display:grid;gap:1rem;min-width:0}
+.sl-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:.6rem 1rem}
+.sl-head h2{font-size:1.25rem}
+.sl-prog{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap}
+.sl-dots{display:flex;gap:.4rem}
+.sl-dot{width:40px;height:40px;border-radius:50%;border:2px solid var(--line);background:var(--paper);color:var(--fg);font:700 .95rem var(--font-display);cursor:pointer}
+.sl-dot.cur{border-color:var(--brand);background:var(--brand-soft);color:var(--brand)}
+.sl-dot.ok{background:var(--ok);border-color:var(--ok);color:var(--on-solid)}
+.sl-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1rem;align-items:start}
+.sl-fig,.sl-ask{display:grid;gap:.7rem;padding:.9rem;min-width:0;align-content:start}
+.sl-fig{background:linear-gradient(180deg,var(--sky-soft),var(--paper) 70%)}
+.sl-fig .svg{max-height:260px}
+.sl-leg{font-size:.82rem}
+.sl-data{display:grid;gap:.3rem}
+.sl-data>div{display:flex;justify-content:space-between;gap:.8rem;padding:.35rem .6rem;background:var(--paper);border:1px solid var(--line);border-radius:8px;font-size:.92rem}
+.sl-data span{color:var(--muted)}
+.sl-story{font-size:1rem}
+.sl-q{display:grid;gap:.3rem}
+.sl-q label{font-weight:600;font-size:.95rem}
+.sl-ans{display:flex;align-items:center;gap:.5rem}
+.sl-ans .in{max-width:11rem;font-size:1.1rem}
+.sl-ans .in.ok{border-color:var(--ok);background:var(--ok-soft)}
+.sl-ans .in.bad{border-color:var(--bad);background:var(--bad-soft)}
+.sl-u{font-weight:600;color:var(--muted)}
+.sl-q .fb{min-height:0;font-weight:600;font-size:.9rem}
+.sl-hint{padding:.5rem .8rem;border-radius:8px;background:var(--brand-soft);color:var(--fg);font-size:.95rem}
+.sl-steps{padding:.7rem .9rem;border-radius:10px;background:var(--ok-soft);border:1px solid var(--ok)}
+.sl-steps ol{margin:.35rem 0 0;padding-left:1.2rem;display:grid;gap:.25rem}
+.sl-nav{justify-content:space-between}
+.sl-sum{padding:.7rem .9rem;border-radius:10px;background:var(--brand-soft)}
+.sl-back{justify-self:start}
+@media (max-width:860px){.sl-body{grid-template-columns:minmax(0,1fr)}.sl-fig .svg{max-height:220px}}
+@media (min-width:861px){.ka-stage{position:relative}}
+.ka-go{position:absolute;top:.5rem;right:.5rem;z-index:2;min-height:36px;padding:.25rem .7rem;font-size:.85rem;background:var(--paper)}
+.ka-stage{position:relative}
+/* controls */
+.btn{font:inherit;font-weight:600;min-height:44px;padding:.5rem 1rem;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--fg);cursor:pointer}
+.btn:hover{border-color:var(--brand)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--on-solid)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--on-solid)}
+.seg{display:flex;flex-wrap:wrap;gap:.4rem}
+.seg .btn{padding:.4rem .8rem}
+.field{display:grid;gap:.25rem}
+.field label,.lbl{display:flex;justify-content:space-between;gap:.5rem;font-weight:600;font-size:.92rem}
+.field label b{font-family:var(--font-mono);font-weight:600}
+input[type=range]{width:100%;min-height:34px;accent-color:var(--brand)}
+.tools{display:grid;gap:.9rem}
+
+/* layout */
+main{padding-block:1.5rem 3rem}
+.panel{display:grid;gap:1.25rem}
+.ph{display:grid;gap:.4rem}
+.cols{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:1.25rem;align-items:start}
+@media (max-width:860px){.cols{grid-template-columns:minmax(0,1fr)}}
+.stack{display:grid;gap:1rem;min-width:0}
+.side{display:grid;gap:.9rem;min-width:0}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:1rem;min-width:0}
+.svg{display:block;width:100%;height:auto}
+.sub{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;justify-content:space-between}
+.cap{font-size:.85rem;color:var(--muted)}
+
+/* readouts */
+.ro{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:0;border-top:1px solid var(--line)}
+.ro>div{padding:.65rem .2rem;border-bottom:1px solid var(--line);min-width:0}
+.ro dt{font-size:.8rem;color:var(--muted)}
+.ro dd{margin:0;font:600 1.15rem var(--font-mono);font-variant-numeric:tabular-nums}
+.chip{display:inline-flex;align-items:center;gap:.4rem;padding:.25rem .7rem;border-radius:999px;font-weight:600;font-size:.9rem;background:var(--grid)}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.chip.info{background:var(--brand-soft);color:var(--brand)}
+.formula{font:600 1.05rem var(--font-mono);padding:.6rem .8rem;background:var(--brand-soft);border-radius:8px;color:var(--fg)}
+.legend{display:flex;flex-wrap:wrap;gap:.4rem 1rem;font-size:.88rem}
+.legend i{display:inline-block;width:.8rem;height:.8rem;border-radius:3px;margin-right:.35rem;vertical-align:-1px}
+.i-tumpu{background:var(--tumpu)}.i-beban{background:var(--beban)}.i-kuasa{background:var(--kuasa)}
+.callout{padding:.8rem 1rem;border-radius:8px;background:var(--beban-soft);color:var(--fg);border:1px solid var(--beban)}
+.note{border:1px dashed var(--line);border-radius:8px;padding:.6rem .9rem;background:var(--paper)}
+.note summary{cursor:pointer;font-weight:600}
+.note ul{margin:.5rem 0 0;padding-left:1.2rem}
+.fb{min-height:1.5rem}
+.fb.ok{color:var(--ok)}.fb.bad{color:var(--bad)}
+
+/* meters */
+.meter{display:grid;gap:.35rem}
+.meter-h{display:flex;justify-content:space-between;gap:.5rem;font-size:.92rem}
+.meter-h b{font-family:var(--font-mono)}
+.bar{position:relative;height:14px;border-radius:7px;background:var(--grid)}
+.bar>i{position:absolute;inset:0 auto 0 0;border-radius:7px;background:var(--brand);width:0;transition:width .5s}
+.bar>i.ok{background:var(--ok)}.bar>i.bad{background:var(--bad)}
+.bar .lim{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--fg)}
+.limtxt{font-size:.78rem;color:var(--muted)}
+
+/* option cards */
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.6rem}
+.opt{font:inherit;text-align:left;display:grid;gap:.2rem;padding:.75rem .9rem;border-radius:10px;border:1px solid var(--line);background:var(--paper);color:var(--fg);cursor:pointer;min-height:44px}
+.opt b{font-family:var(--font-display);font-weight:600}
+.opt span{font-size:.85rem;color:var(--muted)}
+.opt[aria-pressed="true"]{border:2px solid var(--brand);padding:calc(.75rem - 1px) calc(.9rem - 1px)}
+.opt.tried::after{content:"sudah dicoba";font-size:.72rem;color:var(--muted)}
+
+/* concept tiles */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.25rem}
+.tiles>div{border-top:2px solid var(--fg);padding-top:.6rem;display:grid;gap:.25rem;align-content:start}
+.fam{display:flex;flex-wrap:wrap;gap:.5rem}
+.fam a{display:inline-flex;align-items:center;min-height:44px;padding:.4rem .9rem;border-radius:8px;border:1px solid var(--brand);color:var(--brand);font-weight:600;text-decoration:none;background:var(--paper)}
+
+/* svg classes */
+.f-wood{fill:var(--wood)}.f-wood2{fill:var(--wood2)}.f-metal{fill:var(--metal)}.f-paper{fill:var(--paper)}.f-ink{fill:var(--fg)}
+.f-ground{fill:var(--ground)}.f-skin{fill:var(--skin)}.f-soil{fill:var(--soil)}.f-glass{fill:var(--glass)}.f-brand{fill:var(--brand)}.f-soft{fill:var(--brand-soft)}
+.f-tumpu{fill:var(--tumpu)}.f-beban{fill:var(--beban)}.f-kuasa{fill:var(--kuasa)}
+.f-tumpu-s{fill:var(--tumpu-soft)}.f-beban-s{fill:var(--beban-soft)}.f-kuasa-s{fill:var(--kuasa-soft)}
+.s-ink{stroke:var(--fg)}.s-metal{stroke:var(--metal);fill:none}.s-wood{stroke:var(--wood);fill:none}.s-ground{stroke:var(--ground);fill:none}
+.s-tumpu{stroke:var(--tumpu)}.s-beban{stroke:var(--beban)}.s-kuasa{stroke:var(--kuasa)}
+.s-rope{stroke:var(--wood2);stroke-width:3;fill:none}
+.sv-t{font:500 13px var(--font-body);fill:var(--fg)}
+.sv-m{font:600 13px var(--font-mono);fill:var(--fg)}
+.t-tumpu{fill:var(--tumpu)}.t-beban{fill:var(--beban)}.t-kuasa{fill:var(--kuasa)}
+.bd{font:700 12px var(--font-body);fill:var(--on-solid)}
+.ld{font:600 13px var(--font-mono);fill:var(--fg);text-anchor:middle}
+.pt{cursor:pointer}
+.pt:focus{outline:none}
+.pt-c{fill:var(--paper);stroke:var(--fg);stroke-width:2.5}
+.pt-l{font:700 15px var(--font-body);fill:var(--fg)}
+.pt:hover .pt-c{stroke-width:4}
+.pt:focus-visible .pt-c{stroke:var(--brand);stroke-width:5}
+.pt.tumpu .pt-c{fill:var(--tumpu);stroke:var(--tumpu)}.pt.beban .pt-c{fill:var(--beban);stroke:var(--beban)}.pt.kuasa .pt-c{fill:var(--kuasa);stroke:var(--kuasa)}
+.pt.has .pt-l{fill:var(--on-solid)}
+.tag{font:700 13px var(--font-body);text-anchor:middle;paint-order:stroke;stroke:var(--paper);stroke-width:5px;stroke-linejoin:round}
+.tag-tumpu{fill:var(--tumpu)}.tag-beban{fill:var(--beban)}.tag-kuasa{fill:var(--kuasa)}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+.shake{animation:shake .5s}
+
+/* identify */
+.dots{display:flex;flex-wrap:wrap;gap:.4rem}
+.dot{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--paper);color:var(--fg);font:600 .95rem var(--font-mono);cursor:pointer}
+.dot.on{border:2px solid var(--brand)}
+.dot.ok{background:var(--ok);border-color:var(--ok);color:var(--on-solid)}
+.roles{display:flex;flex-wrap:wrap;gap:.5rem}
+.role{font:inherit;font-weight:600;min-height:44px;padding:.4rem .9rem;border-radius:8px;border:2px solid var(--line);background:var(--paper);color:var(--fg);cursor:pointer;display:inline-flex;align-items:center;gap:.5rem}
+.role i{width:.8rem;height:.8rem;border-radius:3px}
+.role[aria-pressed="true"]{border-color:var(--fg)}
+.role.tumpu i{background:var(--tumpu)}.role.beban i{background:var(--beban)}.role.kuasa i{background:var(--kuasa)}
+.fblist{list-style:none;margin:0;padding:0;display:grid;gap:.3rem}
+.fblist li.ok{color:var(--ok)}.fblist li.bad{color:var(--bad)}
+.order{display:grid;gap:.35rem;font-size:.92rem;margin:.5rem 0 0;padding:0;list-style:none}
+
+/* quiz */
+.qopts{display:grid;gap:.5rem}
+.qo{font:inherit;text-align:left;min-height:48px;padding:.6rem .9rem;border-radius:10px;border:1px solid var(--line);background:var(--paper);color:var(--fg);cursor:pointer}
+.qo:hover:not(:disabled){border-color:var(--brand)}
+.qo.ok{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.qo.bad{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.qo:disabled{cursor:default}
+.qprog{display:flex;gap:.3rem}
+.qprog i{flex:1;height:8px;border-radius:4px;background:var(--grid)}
+.qprog i.ok{background:var(--ok)}.qprog i.bad{background:var(--bad)}.qprog i.now{background:var(--brand)}
+.score{font:700 3rem var(--font-display)}
+.rec{display:grid;gap:.5rem}
+.rec-r{display:grid;grid-template-columns:8rem 1fr 3rem;align-items:center;gap:.6rem;font-size:.92rem}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{padding:.45rem .5rem;border-bottom:1px solid var(--line);text-align:left}
+th{font-size:.78rem;color:var(--muted);font-weight:600}
+tr.sel td{background:var(--brand-soft);font-weight:600}
+.scroll-x{overflow-x:auto}
+
+/* gambar kecil */
+.pic{width:84px;height:63px;flex:0 0 auto}
+.pic svg{display:block;width:100%;height:100%}
+.tiles .pic{width:96px;height:72px}
+.opt .pic{width:72px;height:54px}
+.fam a{gap:.6rem;padding:.3rem .9rem .3rem .5rem}
+.fam .pic{width:56px;height:42px}
+/* katrol: satu layar tanpa scroll */
+main{padding-block:1rem 2rem}
+.ka{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1rem;align-items:start}
+.ka-stage{padding:.4rem;display:grid;place-items:center}
+.ka-stage svg{display:block;width:100%;height:calc(100dvh - 190px);max-height:600px;min-height:240px}
+.ka-ctl{display:grid;gap:.8rem;min-width:0}
+.ka-title{font-size:1.15rem}
+.ka-types{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.5rem}
+.ktype{font:inherit;display:grid;justify-items:center;gap:.15rem;text-align:center;padding:.45rem .3rem;border-radius:10px;border:2px solid var(--line);background:var(--paper);color:var(--fg);cursor:pointer;min-height:44px}
+.ktype .pic{width:70px;height:52px}
+.ktype b{font-family:var(--font-display);font-weight:600;font-size:.92rem;line-height:1.2}
+.ktype small{color:var(--muted);font-size:.74rem;line-height:1.2}
+.ktype[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft)}
+.ka-nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem;margin:0}
+.ka-nums>div{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:.5rem .6rem;min-width:0}
+.ka-nums dt{font-size:.75rem;color:var(--muted)}
+.ka-nums dd{margin:0;font:600 1.55rem var(--font-mono);font-variant-numeric:tabular-nums}
+.ka-pull{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.75rem;align-items:end}
+.ka-short{font-weight:600}
+@media (max-width:700px){
+  .ka{grid-template-columns:minmax(0,1fr);gap:.6rem}
+  .ka-stage svg{height:34dvh;min-height:190px}
+  .ka-title,.ktype small{display:none}
+  .ktype .pic{width:56px;height:42px}
+  .ka-ctl{gap:.5rem}
+  .ka-nums dd{font-size:1.25rem}
+}
+
+/* situasi longsor */
+.f-sky{fill:var(--sky)}.f-hill{fill:var(--hill)}.f-hill2{fill:var(--hill2)}.f-rock{fill:var(--rock)}.f-rock2{fill:var(--rock2)}.f-road{fill:var(--road)}
+.s-roadline{stroke:#E8EEF2;fill:none;opacity:.8}
+.sit-stage{padding:.4rem;overflow:hidden}
+.sit-stage svg{overflow:hidden}
+.sit-stage svg{display:block;width:100%;height:auto;max-height:calc(100dvh - 440px);min-height:180px}
+.film-cap{font:600 1.15rem var(--font-display);min-height:1.8em}
+.film-bar{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center}
+.film-bar input[type=range]{flex:1 1 160px;min-width:0}
+.m1-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:1rem;align-items:start}
+.m1-grid .sit-stage svg{max-height:calc(100dvh - 250px)}
+.m1-ctl{display:grid;gap:.8rem;min-width:0}
+.m1-res{display:grid;gap:.7rem}
+.m1-res .btn{justify-self:start}
+.m1-opts{grid-template-columns:repeat(3,minmax(0,1fr))}
+.m1-opts .opt{padding:.4rem .3rem}
+.m1-opts .pic{width:64px;height:48px}
+.m1-opts .opt{justify-items:center;text-align:center}
+@keyframes pulse{50%{box-shadow:0 0 0 6px var(--brand-soft)}}
+.btn.pulse{animation:pulse 1.4s infinite}
+@media (max-width:860px){.m1-grid{grid-template-columns:minmax(0,1fr)}.m1-grid .sit-stage svg{max-height:36dvh}}
+.brand svg{flex:0 0 auto}
+#bigBtn{white-space:nowrap}
+@media (max-width:520px){#bigBtn{padding:.4rem .7rem;font-size:.85rem}.brand-s{display:none}.brand-t{font-size:.95rem}}
+.opt.won{background:var(--ok-soft);border-color:var(--ok)}
+.opt.lost{background:var(--bad-soft);border-color:var(--bad)}
+.opt.won span{color:var(--ok);font-weight:600}
+.opt.lost span{color:var(--bad)}
+.opt:disabled{opacity:.6;cursor:wait}
+.tag-bad{fill:var(--bad)}
+.m-tool{margin:.5rem 0 0;font-weight:600;min-height:1.5em}
+/* tuas: satu layar */
+.tu-head{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:.6rem}
+.tu-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);grid-template-areas:"stage ctl" "res ctl";grid-template-rows:auto 1fr;gap:.8rem 1rem;align-items:start}
+.tu-stage{grid-area:stage;padding:.6rem .8rem}
+.tu-stage .svg{max-height:calc(100dvh - 440px);min-height:190px}
+.tu-ctl{grid-area:ctl;display:grid;gap:.55rem;padding:.8rem}
+.tu-ctl .field label{font-size:.88rem}
+.tu-res{grid-area:res;display:grid;gap:.5rem;min-width:0}
+.tu-res .ro{grid-template-columns:repeat(4,minmax(0,1fr))}
+.tu-res .ro dd{font-size:1rem}
+.st-ok{fill:var(--ok)}.st-bad{fill:var(--bad)}
+@media (max-width:860px){
+  .tu-grid{grid-template-columns:minmax(0,1fr);grid-template-areas:"stage" "ctl" "res";grid-template-rows:none}
+  .tu-stage{position:sticky;top:calc(var(--hd,120px) + env(safe-area-inset-top,0px) + 6px);z-index:4}
+  .tu-stage .svg{max-height:200px;min-height:0}
+  .tu-res .ro{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+/* ===== v2: ringkas dan mengikuti ukuran layar ===== */
+html{font-size:clamp(14px,12.5px + .2vw,17px)}
+:root.big{font-size:19px}
+.wrap{max-width:1560px}
+main{padding-block:.7rem 1.2rem}
+.panel{gap:.7rem}
+.ph{display:flex;flex-wrap:wrap;align-items:center;gap:.2rem .7rem}
+.eyebrow{display:inline-block;padding:.12rem .6rem;border-radius:999px;background:var(--brand-soft);font-size:.7rem}
+h1{font-size:clamp(1.1rem,.9rem + .8vw,1.5rem)}
+h2{font-size:1.05rem}
+.ph-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem .8rem}
+.card{border-radius:14px;box-shadow:0 10px 24px -16px rgba(10,108,176,.5)}
+.btn{border-radius:10px}
+@media (pointer:fine){.btn{min-height:38px;padding:.35rem .9rem}.seg .btn{padding:.3rem .75rem}}
+.stage,.tu-stage,.ka-stage,.sit-stage{background:linear-gradient(180deg,var(--sky-soft),var(--paper) 78%)}
+.m-tool{margin:.35rem 0 0;font-weight:600;min-height:1.4em;font-size:.95rem}
+.ro{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}
+.ro>div{padding:.4rem .2rem}
+.ro dd{font-size:1.02rem}
+.meter .bar{height:12px}
+.formula{font-size:.95rem;padding:.5rem .75rem}
+
+/* meja kerja: gambar di kiri, hasil di kanan */
+.work{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);grid-template-areas:"stage res" "opts res";grid-template-rows:auto 1fr;gap:.7rem 1rem;align-items:start}
+.w-stage{grid-area:stage;padding:.6rem .8rem;min-width:0}
+.w-opts{grid-area:opts;min-width:0}
+.w-res{grid-area:res;display:grid;gap:.7rem;align-content:start;min-width:0}
+.w-stage .svg{max-height:calc(100dvh - var(--hd,52px) - 280px);min-height:150px}
+.pred{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem .9rem;padding:.5rem .8rem}
+.pred .fb{flex:1 1 220px;min-height:0;margin:0}
+
+/* pilihan alat: deretan ikon */
+.opts{grid-template-columns:repeat(5,minmax(0,1fr));gap:.4rem}
+.opt{justify-items:center;text-align:center;padding:.35rem .25rem;gap:0;border-radius:12px}
+.opt .pic{width:60px;height:45px}
+.opt b{font-size:.82rem;line-height:1.15}
+.opt span{font-size:.7rem}
+.opt[aria-pressed="true"]{padding:calc(.35rem - 1px) calc(.25rem - 1px)}
+.opt.tried::after{font-size:.66rem;color:var(--muted)}
+.m1-opts{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+/* tuas */
+.tu-stage .svg{max-height:calc(100dvh - var(--hd,52px) - 300px)}
+#id-card{padding:.8rem}
+#id-card .svg{max-height:calc(100dvh - var(--hd,52px) - 370px);min-height:150px}
+
+/* katrol */
+.ka-stage svg{height:calc(100dvh - var(--hd,52px) - 36px);max-height:640px;min-height:240px}
+
+/* situasi */
+.sit-stage{padding:.4rem}
+.sit-stage svg{max-height:calc(100dvh - var(--hd,52px) - 240px);min-height:170px}
+.m1-grid .sit-stage svg{max-height:calc(100dvh - var(--hd,52px) - 110px)}
+.film-cap{font-size:1.02rem;min-height:1.6em}
+
+/* layar kecil: navigasi bawah seperti aplikasi, satu kolom */
+@media (max-width:860px){
+  .hd-in{justify-content:space-between}
+  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:0;overflow:visible;background:var(--paper);border-top:1px solid var(--line);padding:0 env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);box-shadow:0 -8px 20px -16px rgba(0,0,0,.5)}
+  .tab{flex-direction:column;justify-content:center;gap:.1rem;min-height:54px;padding:.35rem .1rem;border-radius:0;font-size:.68rem;line-height:1.1}
+  .tab .tl{display:none}.tab .ts{display:block}
+  .tab[aria-selected="true"]{background:none;box-shadow:inset 0 3px 0 var(--brand)}
+  .tab-ck{position:absolute;top:5px;left:calc(50% + 7px);width:14px;height:14px;font-size:.58rem}
+  main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+  .work{grid-template-columns:minmax(0,1fr);grid-template-areas:"stage" "opts" "res";grid-template-rows:none}
+  .w-stage .svg{max-height:none}
+  .m1-opts{grid-template-columns:repeat(5,minmax(0,1fr))}
+  .ka-stage svg{height:34dvh;min-height:190px}
+  .sit-stage svg{max-height:none}
+  .m1-grid .sit-stage svg{max-height:none}
+  #id-card .svg{max-height:none}
+}
+@media (max-width:560px){
+  #bigBtn{display:none}
+  .opt .pic{width:42px;height:32px}
+  .opt b{font-size:.7rem}
+  .opt span{display:none}
+  .ph-row{gap:.4rem}
+  .ph-row .seg{width:100%}
+  .ph-row .seg .btn{flex:1 1 0;padding-inline:.4rem;font-size:.85rem}
+  .tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem}
+}
+@media (min-width:1500px){:root.big .wrap{max-width:1800px}}
+/* ===== v3: penyetelan akhir ===== */
+@media (min-width:861px){.work{grid-template-columns:minmax(0,1.8fr) minmax(0,1fr)}.opt .pic{width:74px;height:55px}.opt b{font-size:.88rem}.opt span{font-size:.74rem}}
+/* kontrol bidang miring dalam satu baris */
+.mi-work .w-opts{display:flex;flex-wrap:wrap;align-items:flex-end;gap:.5rem 1rem;padding:.7rem .9rem}
+.mi-work .w-opts .field{flex:1 1 240px}
+.mi-work .w-opts .fb{flex-basis:100%;min-height:0;margin:0}
+.mi-work .w-stage .svg{max-height:calc(100dvh - var(--hd,52px) - 350px)}
+.ka-stage svg{height:calc(100dvh - var(--hd,52px) - 64px)}
+@media (max-width:860px){
+  .mi-work .w-stage .svg{max-height:none}
+  .ka-stage svg{height:34dvh}
+  .tu-ctl .field{grid-template-columns:minmax(0,8.5rem) minmax(0,1fr);align-items:center;gap:.5rem}
+  .tu-ctl .field label{flex-direction:column;gap:0}
+  .tu-ctl .field label b{font-size:.85rem}
+}
+/* HP: teks di dalam gambar dibesarkan agar terbaca */
+@media (max-width:560px){
+  #lv-svg text,#mi-svg text,#m-dyn text,.w-stage .svg text,#m1-svg text{font-size:17px!important}
+  .w-stage .svg text.sv-m{font-size:15px!important}
+  #m-dyn text.sv-m{font-size:11px!important}
+  #mi-svg text{display:none}
+}
+.qend{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);grid-template-areas:"a b" "c b";gap:1.25rem;align-items:start}
+.qe-a,.qe-c{display:grid;gap:1rem;min-width:0}.qe-a{grid-area:a}.qe-c{grid-area:c}.qe-b{grid-area:b;min-width:0}
+.sendbox{display:grid;gap:.9rem;border:1px solid var(--line);border-top:3px solid var(--brand);border-radius:10px;padding:1rem;background:var(--paper)}
+.f2{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.8rem}
+.in{font:inherit;width:100%;min-height:44px;padding:.5rem .7rem;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--fg)}
+textarea.in{min-height:84px;resize:vertical}
+.rate{display:grid;gap:.3rem}
+.rate-b{display:flex;gap:.35rem}
+.rate-b button{flex:1;min-height:44px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--fg);font:600 1rem var(--font-mono);cursor:pointer}
+.rate-b button:hover{border-color:var(--brand)}
+.rate-b button[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--on-solid)}
+.rate-l{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted)}
+@media (max-width:860px){.qend{grid-template-columns:minmax(0,1fr);grid-template-areas:"a" "b" "c"}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<header class="hd">
+  <div class="wrap hd-in">
+    <div class="brand">
+      <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect x="3" y="15" width="28" height="5" rx="2" class="f-wood" transform="rotate(-12 17 17)"/><polygon points="17,18 11,30 23,30" class="f-tumpu"/><circle cx="17" cy="17" r="3" class="f-paper s-ink" stroke-width="2"/></svg>
+      <div><div class="brand-t">Lab Pesawat Sederhana</div><div class="brand-s">IPA kelas VIII</div></div>
+    </div>
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Bagian pelajaran"></nav>
+    <div class="mus">
+      <button class="btn" id="musikBtn" aria-pressed="false" aria-label="Musik latar" title="Hidupkan atau matikan musik latar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V6l11-2v12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6.5" cy="18" r="3" fill="currentColor"/><circle cx="17.5" cy="16" r="3" fill="currentColor"/></svg><span class="mt">Musik</span></button>
+      <input type="range" id="musikVol" min="0" max="100" value="65" aria-label="Volume musik">
+    </div>
+    <button class="btn" id="bigBtn" aria-pressed="false" title="Perbesar tampilan untuk layar proyektor atau IFP">Layar besar</button>
+  </div>
+</header>
+<main class="wrap">
+
+<section id="p-situasi" class="panel" aria-labelledby="h-situasi">
+  <div class="ph">
+    <p class="eyebrow">Situasi</p>
+    <h1 id="h-situasi">Longsor menutup jalan menuju desa</h1>
+  </div>
+  <div id="sit-film" class="stack">
+    <div class="card sit-stage"><svg id="film-svg" class="svg" viewBox="0 0 640 360" role="img" aria-label="Film animasi: hujan deras, tanah longsor, batu besar menutup jalan, truk bantuan tertahan"></svg></div>
+    <p class="film-cap" id="film-cap" aria-live="polite"></p>
+    <div class="film-bar">
+      <button class="btn" id="film-pp">Jeda</button>
+      <input id="film-seek" type="range" min="0" max="200" value="0" aria-label="Posisi film">
+      <button class="btn primary" id="film-go" hidden>Mulai Misi 1</button>
+    </div>
+  </div>
+  <div id="sit-m1" class="m1-grid" hidden>
+    <div class="card sit-stage"><svg id="m1-svg" class="svg" viewBox="0 0 640 360" role="img" aria-label="Batu besar di jalan, warga siap memindahkan dengan alat pilihan"></svg></div>
+    <div class="m1-ctl">
+      <div class="sub">
+        <div class="legend"><span class="chip bad">Batu 500 kg = 5.000 N</span><span class="chip ok">Tim 4 warga = 1.000 N</span></div>
+        <button class="btn" id="m1-back">Putar film lagi</button>
+      </div>
+      <div class="opts m1-opts" id="m1-opts" role="group" aria-label="Pilih alat"></div>
+      <div class="m1-res">
+        <div class="meter">
+          <div class="meter-h"><span>Gaya yang dibutuhkan</span><span><b id="m1-f">-</b> <b id="m1-km" class="muted">-</b></span></div>
+          <div class="bar"><i id="m1-fb"></i><u class="lim" style="left:20%"></u></div>
+          <div class="limtxt">Garis hitam: kekuatan tim, 1.000 N</div>
+        </div>
+        <p id="m1-status" class="fb" aria-live="polite">Pilih alat untuk memindahkan batu.</p>
+        <button class="btn primary" id="m1-next" hidden>Lanjut: angkat bantuan ke truk</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="p-mulai" class="panel" aria-labelledby="h-mulai" hidden>
+  <div class="ph-row">
+    <div class="ph"><p class="eyebrow">Misi 2</p><h1 id="h-mulai">Peti bantuan 100 kg ke bak truk setinggi 1 m</h1></div>
+    <div class="seg subtabs" role="group" aria-label="Pilih kegiatan"><button class="btn" data-sub="coba" aria-pressed="true">Coba angkat</button><button class="btn" data-sub="konsep" aria-pressed="false">Apa itu pesawat sederhana?</button></div>
+  </div>
+  <div class="work" data-sp="coba">
+    <div class="card stage w-stage">
+      <svg class="svg" viewBox="0 0 640 216" role="img" aria-label="Peti bantuan di tanah dan bak truk setinggi 1 meter">
+          <rect x="0" y="190" width="640" height="40" class="f-ground"/>
+          <rect x="410" y="120" width="220" height="16" rx="3" class="f-metal"/>
+          <rect x="410" y="136" width="220" height="30" class="f-ink" opacity=".75"/>
+          <circle cx="470" cy="166" r="24" class="f-paper s-ink" stroke-width="8"/>
+          <circle cx="570" cy="166" r="24" class="f-paper s-ink" stroke-width="8"/>
+          <line x1="392" y1="120" x2="392" y2="190" class="s-ink" stroke-width="2" stroke-dasharray="4 3"/>
+          <line x1="386" y1="120" x2="398" y2="120" class="s-ink" stroke-width="2"/>
+          <line x1="386" y1="190" x2="398" y2="190" class="s-ink" stroke-width="2"/>
+          <text x="382" y="160" text-anchor="end" class="sv-m">1 m</text>
+          <g id="m-dyn"></g>
+        </svg>
+      <p id="m-tool" class="m-tool">Pilih alat di bawah gambar untuk mencoba.</p>
+    </div>
+    <div class="w-opts"><div id="m-opts" class="opts"></div></div>
+    <div class="card w-res">
+      <h2>Hasil percobaan</h2>
+      <div class="meter">
+        <div class="meter-h"><span>Gaya yang kamu keluarkan</span><b id="m-f">belum dicoba</b></div>
+        <div class="bar"><i id="m-fb"></i><u class="lim" style="left:25%"></u></div>
+        <div class="limtxt">Garis hitam: batas kekuatanmu, 250 N</div>
+      </div>
+      <div class="meter">
+        <div class="meter-h"><span>Jarak yang kamu tempuh</span><b id="m-s">belum dicoba</b></div>
+        <div class="bar"><i id="m-sb"></i></div>
+      </div>
+      <dl class="ro"><div><dt>Usaha = gaya × jarak</dt><dd id="m-w">-</dd></div></dl>
+      <div id="m-status" class="fb" aria-live="polite">Gayamu hanya 250 N. Coba beberapa alat.</div>
+    </div>
+  </div>
+  <div data-sp="konsep" hidden>
+  <div class="card" style="display:grid;gap:1rem">
+    <h2>Apa itu pesawat sederhana?</h2>
+    <p style="max-width:65ch">Alat sederhana yang memudahkan pekerjaan. Tiga manfaatnya:</p>
+    <div class="tiles">
+      <div><div class="pic" data-pic="truckramp"></div><h3>Memperkecil gaya</h3><p class="muted">Contoh: papan miring.</p></div>
+      <div><div class="pic" data-pic="flag"></div><h3>Mengubah arah gaya</h3><p class="muted">Contoh: katrol tiang bendera.</p></div>
+      <div><div class="pic" data-pic="tweezers"></div><h3>Mengubah jarak gerak</h3><p class="muted">Contoh: pinset.</p></div>
+    </div>
+    <p class="callout">Usaha tetap sama: gaya kecil, jarak jauh.</p>
+    <div class="formula">KM = berat beban ÷ gaya yang diberikan</div>
+    <p class="cap">KM = keuntungan mekanis. KM 4 berarti gaya 4 kali lebih kecil. Pelajari:</p>
+    <div class="fam"><a href="#tuas" data-go="tuas"><span class="pic" data-pic="lever"></span>Tuas</a><a href="#bidang-miring" data-go="bidang-miring"><span class="pic" data-pic="ramp"></span>Bidang miring</a><a href="#katrol" data-go="katrol"><span class="pic" data-pic="hoist3"></span>Katrol</a></div>
+    <details class="note"><summary>Pertanyaan diskusi kelas</summary><ul><li>Mengapa orang tetap memilih papan miring walaupun jaraknya lebih jauh?</li><li>Apakah ada cara yang membuat usaha menjadi lebih kecil dari 1.000 J? Mengapa?</li></ul></details>
+  </div>
+  </div>
+</section>
+
+<section id="p-tuas" class="panel" aria-labelledby="h-tuas" hidden>
+  <div class="ph-row">
+    <div class="ph"><p class="eyebrow">Tuas atau pengungkit</p><h1 id="h-tuas">Titik tumpu, beban, dan kuasa</h1></div>
+    <div class="seg subtabs" role="group" aria-label="Pilih kegiatan tuas">
+      <button class="btn" data-sub="sim" aria-pressed="true">Simulasi tuas</button>
+      <button class="btn" data-sub="id" aria-pressed="false">Kenali jenis tuas</button>
+      <button class="btn" data-sub="soal" aria-pressed="false">Soal kasus nyata</button>
+    </div>
+  </div>
+
+  <div id="tu-sim" class="tu-grid" data-sp="sim">
+    <div class="card tu-stage">
+      <svg id="lv-svg" class="svg" viewBox="0 0 640 316" role="img" aria-label="Simulasi tuas"></svg>
+      <div class="legend" style="margin-top:.4rem"><span><i class="i-tumpu"></i>Titik tumpu</span><span><i class="i-beban"></i>Beban</span><span><i class="i-kuasa"></i>Kuasa</span></div>
+    </div>
+    <div class="card tu-ctl">
+      <div><div class="lbl">Jenis tuas</div>
+        <div class="seg" id="lv-j" role="group" aria-label="Jenis tuas"><button class="btn" data-j="1" aria-pressed="true">Jenis 1</button><button class="btn" data-j="2" aria-pressed="false">Jenis 2</button><button class="btn" data-j="3" aria-pressed="false">Jenis 3</button></div>
+        <p class="cap" id="lv-jd" style="margin-top:.3rem"></p></div>
+      <div class="field"><label for="lv-w">Berat beban <b id="lv-wv">60 N</b></label><input id="lv-w" type="range" min="30" max="90" step="30" value="60"></div>
+      <div class="field"><label for="lv-lb">Lengan beban <b id="lv-lbv"></b></label><input id="lv-lb" type="range" min="10" max="100" step="10" value="30"></div>
+      <div class="field"><label for="lv-lk">Lengan kuasa <b id="lv-lkv"></b></label><input id="lv-lk" type="range" min="10" max="100" step="10" value="60"></div>
+      <div class="field"><label for="lv-f">Gaya kuasa <b id="lv-fv"></b></label><input id="lv-f" type="range" min="0" max="100" step="1" value="30"></div>
+      <button class="btn primary" id="lv-auto">Cari gaya yang pas</button>
+      <details class="note"><summary>Pertanyaan diskusi kelas</summary><ul><li>Pada jenis 1, apa yang terjadi pada KM jika tumpu digeser mendekati beban?</li><li>Mengapa tuas jenis 3 tetap dipakai walaupun gayanya harus lebih besar dari beban?</li></ul></details>
+    </div>
+    <div class="tu-res">
+      <div id="lv-chip" hidden></div>
+      <dl class="ro" id="lv-ro"></dl>
+      <div class="formula">beban × lengan beban = kuasa × lengan kuasa</div>
+      <p class="cap" id="lv-note"></p>
+    </div>
+  </div>
+
+  <div id="tu-soal" data-sp="soal" hidden><div class="soal" id="sl-tuas"></div></div>
+
+  <div id="tu-id" data-sp="id" hidden>
+    <div class="cols">
+      <div class="stack">
+        <div class="card" id="id-card"></div>
+      </div>
+      <div class="side" id="id-side"></div>
+    </div>
+  </div>
+</section>
+
+<section id="p-bidang-miring" class="panel" aria-labelledby="h-miring" hidden>
+  <div class="ph-row">
+    <div class="ph"><p class="eyebrow">Bidang miring</p><h1 id="h-miring">Mengapa jalan menanjak dibuat panjang?</h1></div>
+    <div class="seg subtabs" role="group" aria-label="Pilih kegiatan"><button class="btn" data-sub="sim" aria-pressed="true">Simulasi</button><button class="btn" data-sub="kasus" aria-pressed="false">Di sekitar kita</button><button class="btn" data-sub="soal" aria-pressed="false">Soal kasus nyata</button></div>
+  </div>
+  <div data-sp="sim" class="stack">
+    <div class="card pred">
+      <span class="lbl">Tebak: papan mana lebih ringan didorong?</span>
+      <div class="seg" id="mi-pred"><button class="btn" data-p="a">Papan 2 m</button><button class="btn" data-p="b">Papan 4 m</button><button class="btn" data-p="c">Sama saja</button></div>
+      <p id="mi-predfb" class="fb" aria-live="polite"></p>
+    </div>
+    <div class="work mi-work">
+      <div class="card stage w-stage">
+        <svg id="mi-svg" class="svg" viewBox="0 0 700 280" role="img" aria-label="Peti didorong naik papan miring ke bak truk"></svg>
+        <p class="m-tool">Peti 1.000 N naik 1 m. Pak Budi hanya kuat 250 N.</p>
+      </div>
+      <div class="card w-opts tools">
+        <div class="field"><label for="mi-s">Panjang papan miring <b id="mi-sv"></b></label><input id="mi-s" type="range" min="1.5" max="8" step="0.5" value="2"></div>
+        <div class="seg"><button class="btn primary" id="mi-go">Coba dorong peti</button><button class="btn" id="mi-reset">Ulangi</button></div>
+        <p id="mi-fb" class="fb" aria-live="polite"></p>
+      </div>
+      <div class="card w-res">
+        <h2>Hasil ukur</h2>
+        <div id="mi-chip"></div>
+        <dl class="ro" id="mi-ro"></dl>
+        <div class="formula">F = (berat × tinggi) ÷ panjang<br>KM = panjang ÷ tinggi</div>
+        <p class="cap">Papan lebih panjang: gaya kecil, jarak jauh.</p>
+      </div>
+    </div>
+  </div>
+  <div data-sp="kasus" hidden>
+  <div class="card" style="display:grid;gap:1rem">
+    <h2>Di mana bidang miring membantu?</h2>
+    <div class="tiles">
+      <div><div class="pic" data-pic="road"></div><h3>Jalan berkelok</h3><p class="muted">Tanjakan jadi landai.</p></div>
+      <div><div class="pic" data-pic="ramp"></div><h3>Jalur kursi roda</h3><p class="muted">Panjang, landai, ringan.</p></div>
+      <div><div class="pic" data-pic="truckramp"></div><h3>Papan naik truk</h3><p class="muted">Didorong, tidak diangkat.</p></div>
+      <div><div class="pic" data-pic="screw"></div><h3>Sekrup</h3><p class="muted">Bidang miring yang melingkar.</p></div>
+    </div>
+    <svg class="svg" viewBox="0 0 640 170" role="img" aria-label="Jalan lurus curam dibandingkan jalan berkelok di gunung" style="max-width:640px">
+      <polygon points="40,150 190,30 340,150" class="f-ground"/>
+      <line x1="95" y1="150" x2="190" y2="30" class="s-ink" stroke-width="3" stroke-dasharray="6 4"/>
+      <text x="190" y="164" text-anchor="middle" class="sv-t">Lurus: pendek, curam, gaya besar</text>
+      <polygon points="340,150 490,30 640,150" class="f-ground"/>
+      <polyline points="360,150 560,140 400,118 540,108 430,88 510,78 470,56 490,32" fill="none" class="s-kuasa" stroke-width="3"/>
+      <text x="500" y="164" text-anchor="middle" class="sv-t">Berkelok: panjang, landai, gaya kecil</text>
+    </svg>
+    <details class="note"><summary>Pertanyaan diskusi kelas</summary><ul><li>Mengapa pengendara truk memilih jalan berkelok walaupun jaraknya lebih jauh?</li><li>Jika tinggi tetap 1 m, berapa panjang papan agar gaya turun menjadi 100 N?</li></ul></details>
+  </div>
+  </div>
+  <div data-sp="soal" hidden><div class="soal" id="sl-miring"></div></div>
+</section>
+
+<section id="p-katrol" class="panel ka-panel" aria-labelledby="h-katrol" hidden>
+  <div class="ka">
+    <div class="card ka-stage"><button class="btn ka-go" data-act="kgo" data-v="soal">Soal kasus nyata</button><svg id="ka-svg" viewBox="0 0 360 400" role="img" aria-label="Simulasi katrol. Seret tangan atau gerakkan penggeser untuk menarik tali"></svg></div>
+    <div class="ka-ctl">
+      <h1 id="h-katrol" class="ka-title">Katrol: tarik tali, lihat gayanya</h1>
+      <div class="ka-types" id="ka-type" role="group" aria-label="Jenis katrol"></div>
+      <dl class="ka-nums" id="ka-ro"></dl>
+      <div class="ka-pull">
+        <div class="field"><label for="ka-p">Tarik tali <b id="ka-pv"></b></label><input id="ka-p" type="range" min="0" max="100" step="1" value="50"></div>
+        <button class="btn primary" id="ka-auto">Tarik otomatis</button>
+      </div>
+      <p class="ka-short"><span id="ka-note"></span> <span class="chip info" id="ka-chip"></span></p>
+    </div>
+  </div>
+  <div id="ka-soal" hidden>
+    <button class="btn sl-back" data-act="kgo" data-v="sim" style="margin-bottom:.8rem">‹ Kembali ke simulasi katrol</button>
+    <div class="soal" id="sl-katrol"></div>
+  </div>
+</section>
+
+<section id="p-roda" class="panel" aria-labelledby="h-roda" hidden>
+  <div class="ph-row">
+    <div class="ph"><p class="eyebrow">Roda berporos</p><h1 id="h-roda">Mengapa setir mobil dibuat besar?</h1></div>
+    <div class="seg subtabs" role="group" aria-label="Pilih kegiatan roda berporos">
+      <button class="btn" data-sub="sim" aria-pressed="true">Simulasi</button>
+      <button class="btn" data-sub="soal" aria-pressed="false">Soal kasus nyata</button>
+    </div>
+  </div>
+  <div class="tu-grid" data-sp="sim">
+    <div class="card tu-stage">
+      <svg id="rb-svg" class="svg" viewBox="0 0 400 316" role="img" aria-label="Simulasi roda berporos: roda besar dan poros kecil yang berputar bersama"></svg>
+      <div class="legend" style="margin-top:.4rem"><span><i class="i-kuasa"></i>Kuasa (tangan, di roda)</span><span><i class="i-beban"></i>Beban (di poros)</span></div>
+    </div>
+    <div class="card tu-ctl">
+      <p class="cap">Roda besar dan poros kecil berputar bersama. Tangan memutar roda, beban menggulung di poros.</p>
+      <div class="field"><label for="rb-roda">Jari-jari roda (R) <b id="rb-rodav"></b></label><input id="rb-roda" type="range" min="10" max="40" step="5" value="20"></div>
+      <div class="field"><label for="rb-poros">Jari-jari poros (r) <b id="rb-porosv"></b></label><input id="rb-poros" type="range" min="2" max="10" step="1" value="4"></div>
+      <div class="field"><label for="rb-beban">Berat beban <b id="rb-bebanv"></b></label><input id="rb-beban" type="range" min="40" max="200" step="20" value="100"></div>
+      <div class="field"><label for="rb-a">Putar roda <b id="rb-sudutv"></b></label><input id="rb-a" type="range" min="0" max="180" step="1" value="0"></div>
+      <div class="seg"><button class="btn primary" id="rb-auto">Putar roda</button><button class="btn" id="rb-reset">Ulangi</button></div>
+      <details class="note"><summary>Pertanyaan diskusi kelas</summary><ul><li>Apa yang terjadi pada KM jika roda diperbesar dan poros tetap?</li><li>Mengapa tangan harus bergerak lebih jauh daripada beban?</li><li>Sebutkan benda di rumah yang memakai prinsip roda berporos.</li></ul></details>
+    </div>
+    <div class="tu-res">
+      <div><span class="chip info" id="rb-chip"></span></div>
+      <dl class="ro" id="rb-ro"></dl>
+      <div class="formula">KM = jari-jari roda ÷ jari-jari poros<br>kuasa × R = beban × r</div>
+    </div>
+  </div>
+  <div data-sp="soal" hidden><div class="soal" id="sl-roda"></div></div>
+</section>
+
+<section id="p-kuis" class="panel" aria-labelledby="h-kuis" hidden>
+  <div class="ph">
+    <p class="eyebrow">Uji pemahaman</p>
+    <h1 id="h-kuis">Kuis pesawat sederhana</h1>
+  </div>
+  <div class="card" id="qz" style="display:grid;gap:1rem"></div>
+</section>
+</main>
+<script>
+(function(){
+'use strict';
+/* ===== SAMBUNGAN GOOGLE SHEET GURU =====
+   Tempel alamat Web App Google Apps Script (berakhiran /exec) di antara tanda petik.
+   Kosong = hasil tidak dikirim otomatis, siswa menyalin barisnya. */
+const SHEET_URL='https://script.google.com/macros/s/AKfycbwsJ9mfRZxN4NJ8l1BM7WpzEAzpKm83NHfDu_l2T9wdJbIyLTXAl86cRLFbhAGYPwdl/exec';
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const fmt=(n,d=0)=>Number(n).toLocaleString('id-ID',{minimumFractionDigits:d,maximumFractionDigits:d});
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+const ROLE={tumpu:{n:'Titik tumpu'},beban:{n:'Beban'},kuasa:{n:'Kuasa'}};
+
+/* ---------- navigasi ---------- */
+const TABS=[['situasi','Situasi',4],['mulai','Angkat bantuan',4],['tuas','Tuas',6],['bidang-miring','Bidang miring',4],['katrol','Katrol',5],['roda','Roda berporos',5],['kuis','Kuis',7]];
+const SHORT={situasi:'Situasi',mulai:'Bantuan',tuas:'Tuas','bidang-miring':'Miring',katrol:'Katrol',roda:'Roda',kuis:'Kuis'};
+const done={};
+let curTab='situasi';
+const ICON={
+  'situasi':'<svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="2,20 9,7 13,13 16,9 22,20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><circle cx="17" cy="5" r="2" fill="currentColor"/></svg>',
+  'mulai':'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="8" width="16" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="2.2"/><line x1="4" y1="13" x2="20" y2="13" stroke="currentColor" stroke-width="2"/><path d="M9 4l3 4 3-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  'tuas':'<svg viewBox="0 0 24 24" aria-hidden="true"><line x1="3" y1="9" x2="21" y2="14" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><polygon points="12,13 7,21 17,21" fill="currentColor"/></svg>',
+  'bidang-miring':'<svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="3,20 21,20 21,7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/></svg>',
+  'katrol':'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="9" r="5" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="9" r="1.6" fill="currentColor"/><line x1="7" y1="9" x2="7" y2="21" stroke="currentColor" stroke-width="2.2"/><line x1="17" y1="9" x2="17" y2="17" stroke="currentColor" stroke-width="2.2"/></svg>',
+  'roda':'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="12" r="3" fill="currentColor"/><path d="M12 3v6M12 15v6M3 12h6M15 12h6" stroke="currentColor" stroke-width="1.8"/></svg>',
+  'kuis':'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17" r="1.2" fill="currentColor"/></svg>'
+};
+function renderTabs(){
+  const bar=$('#tabs'), hadFocus=bar.contains(document.activeElement);
+  bar.innerHTML=TABS.map(([id,t,m])=>{
+    const on=id===curTab;
+    return `<button type="button" role="tab" id="tab-${id}" class="tab${done[id]?' ok':''}" data-go="${id}" title="${t} (${m} menit)" aria-selected="${on}" aria-controls="p-${id}" tabindex="${on?0:-1}">${ICON[id]}<span class="tl">${t}</span><span class="ts">${SHORT[id]}</span>${done[id]?'<span class="tab-ck" aria-label="selesai">✓</span>':''}</button>`;
+  }).join('');
+  const sel=$('#tab-'+curTab);
+  if(sel){ if(bar.scrollWidth>bar.clientWidth) bar.scrollLeft=sel.offsetLeft-(bar.clientWidth-sel.offsetWidth)/2; if(hadFocus) sel.focus({preventScroll:true}); }
+}
+function show(id){
+  if(!TABS.some(t=>t[0]===id)) id='situasi';
+  curTab=id;
+  $$('.panel').forEach(p=>{p.hidden=(p.id!=='p-'+id)});
+  renderTabs();
+  window.scrollTo(0,0);
+}
+function nudge(sel){ const b=$(sel); if(b && b.getAttribute('aria-pressed')!=='true') b.classList.add('pulse'); }
+function mark(id){
+  if(done[id]) return;
+  done[id]=true; renderTabs();
+  if(id==='mulai') nudge('#p-mulai [data-sub="konsep"]');
+  if(id==='bidang-miring') nudge('#p-bidang-miring [data-sub="kasus"]');
+}
+function fromHash(){ show((location.hash||'').slice(1)); }
+document.addEventListener('click',e=>{
+  const g=e.target.closest('[data-go]');
+  if(g){ e.preventDefault(); show(g.dataset.go); try{location.hash=g.dataset.go}catch(err){} return; }
+  const a=e.target.closest('[data-act]');
+  if(a && ACT[a.dataset.act]) ACT[a.dataset.act](a,e);
+});
+document.addEventListener('keydown',e=>{
+  if((e.key==='Enter'||e.key===' ') && e.target.classList && e.target.classList.contains('pt')){
+    e.preventDefault(); e.target.dispatchEvent(new MouseEvent('click',{bubbles:true}));
+  }
+});
+window.addEventListener('hashchange',fromHash);
+$$('.panel').forEach(p=>{p.setAttribute('role','tabpanel');p.setAttribute('aria-labelledby','tab-'+p.id.slice(2));});
+$('#tabs').addEventListener('keydown',e=>{
+  const ids=TABS.map(t=>t[0]); let i=ids.indexOf(curTab);
+  if(e.key==='ArrowRight') i=(i+1)%ids.length;
+  else if(e.key==='ArrowLeft') i=(i-1+ids.length)%ids.length;
+  else if(e.key==='Home') i=0;
+  else if(e.key==='End') i=ids.length-1;
+  else return;
+  e.preventDefault(); show(ids[i]); try{location.hash=ids[i]}catch(err){}
+  const t=$('#tab-'+ids[i]); if(t) t.focus({preventScroll:true});
+});
+$('#bigBtn').addEventListener('click',e=>{
+  const on=document.documentElement.classList.toggle('big');
+  e.currentTarget.setAttribute('aria-pressed',String(on));
+});
+const ACT={};
+
+/* ---------- musik latar: disintesis di browser, tanpa file audio ---------- */
+const MUSIK_AWAL=true;  /* ubah ke false jika musik baru boleh menyala setelah siswa menekan tombol Musik */
+const MUSIK={ctx:null,master:null,noise:null,timer:null,next:0,step:0,seed:11,want:false,vol:.45,run:false};
+(function(){
+  const lsGet=k=>{try{return localStorage.getItem(k);}catch(e){return null;}};
+  const lsSet=(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}};
+  const hz=m=>440*Math.pow(2,(m-69)/12);
+  const CH=[[60,64,67],[59,62,67],[57,60,64],[57,60,65]];   /* C, G, Am, F: lagu pop ceria */
+  const BS=[48,43,45,41];
+  const PENT=[60,62,64,67,69,72,74,76];                      /* tangga nada pentatonik C */
+  const STEP=.242;                                           /* delapan per bar, 124 bpm */
+  const rnd=()=>{MUSIK.seed=(MUSIK.seed*1664525+1013904223)>>>0;return MUSIK.seed/4294967296;};
+  const lvl=()=>.17*MUSIK.vol*MUSIK.vol*4;                   /* kurva volume halus, maksimum sekitar .20 */
+  function pluck(f,t,d,g,type){
+    const c=MUSIK.ctx,o=c.createOscillator(),e=c.createGain();
+    o.type=type||'triangle'; o.frequency.value=f;
+    e.gain.setValueAtTime(0.0001,t); e.gain.exponentialRampToValueAtTime(g,t+.015); e.gain.exponentialRampToValueAtTime(0.0001,t+d);
+    o.connect(e); e.connect(MUSIK.master); o.start(t); o.stop(t+d+.05);
+  }
+  function pad(notes,t,d){
+    const c=MUSIK.ctx;
+    notes.forEach(m=>{
+      const o=c.createOscillator(),e=c.createGain();
+      o.type='sine'; o.frequency.value=hz(m); o.detune.value=(rnd()-.5)*8;
+      e.gain.setValueAtTime(0.0001,t); e.gain.linearRampToValueAtTime(.05,t+.35); e.gain.linearRampToValueAtTime(.035,t+d*.7); e.gain.linearRampToValueAtTime(0.0001,t+d+.5);
+      o.connect(e); e.connect(MUSIK.master); o.start(t); o.stop(t+d+.6);
+    });
+  }
+  function shaker(t,g){
+    const c=MUSIK.ctx,s=c.createBufferSource(),f=c.createBiquadFilter(),e=c.createGain();
+    s.buffer=MUSIK.noise; f.type='highpass'; f.frequency.value=6500;
+    e.gain.setValueAtTime(g,t); e.gain.exponentialRampToValueAtTime(0.0001,t+.07);
+    s.connect(f); f.connect(e); e.connect(MUSIK.master); s.start(t,rnd()); s.stop(t+.08);
+  }
+  function kick(t){
+    const c=MUSIK.ctx,o=c.createOscillator(),e=c.createGain();
+    o.type='sine'; o.frequency.setValueAtTime(160,t); o.frequency.exponentialRampToValueAtTime(48,t+.12);
+    e.gain.setValueAtTime(.5,t); e.gain.exponentialRampToValueAtTime(0.0001,t+.2);
+    o.connect(e); e.connect(MUSIK.master); o.start(t); o.stop(t+.22);
+  }
+  function snare(t){
+    const c=MUSIK.ctx,s=c.createBufferSource(),f=c.createBiquadFilter(),e=c.createGain();
+    s.buffer=MUSIK.noise; f.type='bandpass'; f.frequency.value=1800; f.Q.value=.8;
+    e.gain.setValueAtTime(.15,t); e.gain.exponentialRampToValueAtTime(0.0001,t+.13);
+    s.connect(f); f.connect(e); e.connect(MUSIK.master); s.start(t,rnd()); s.stop(t+.14);
+  }
+  let last=72;
+  const RIFF=[[1,0,1,1,0,1,0,1],[1,1,0,1,1,0,1,1]];
+  function play(t,n){
+    const bar=Math.floor(n/8)%4, st=n%8, sec=Math.floor(n/32)%2, ch=CH[bar], r=BS[bar];
+    if(st===0) pad(ch,t,STEP*8);
+    /* ketukan: kick bergoyang, snare di ketukan 2 dan 4, hi-hat rapat */
+    if(st===0||st===3||st===4) kick(t);
+    if(st===2||st===6) snare(t);
+    shaker(t,st%2?.06:.03);
+    /* bass melompat */
+    if(st===0||st===2||st===4) pluck(hz(r),t,.22,.22,'triangle');
+    else if(st===3) pluck(hz(r+12),t,.18,.18,'triangle');
+    else if(st===6) pluck(hz(r+7),t,.2,.2,'triangle');
+    /* melodi utama: gelombang kotak, ringkas dan ceria */
+    if(bar===3&&st>=4){
+      const run=[62,67,72,76]; last=run[st-4];   /* tanjakan naik di akhir putaran, terasa menantang */
+      pluck(hz(last),t,.2,.085,'square');
+    } else if(RIFF[(bar+sec)%2][st]){
+      if(st===0||st===4){ last=ch[Math.floor(rnd()*3)]+12; }
+      else{ let i=PENT.indexOf(last); if(i<0) i=5; i=Math.max(0,Math.min(PENT.length-1,i+(rnd()<.5?-1:1)+(rnd()<.25?1:0))); last=PENT[i]; }
+      pluck(hz(last),t,.2,(st===0||st===4)?.09:.07,'square');
+    }
+    /* bagian kedua: arpeggio tinggi yang berlari */
+    if(sec===1&&st%2===1) pluck(hz(ch[(st>>1)%3]+24),t,.14,.04,'triangle');
+  }
+  function sched(){
+    const c=MUSIK.ctx; if(!c) return;
+    while(MUSIK.next<c.currentTime+.5){ play(MUSIK.next,MUSIK.step); MUSIK.next+=STEP; MUSIK.step++; }
+  }
+  function ui(){
+    const b=$('#musikBtn'); if(!b) return;
+    b.setAttribute('aria-pressed',String(MUSIK.want));
+    b.title=MUSIK.want?'Matikan musik latar':'Hidupkan musik latar';
+  }
+  function start(){
+    if(!MUSIK.ctx){
+      const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return false;
+      const c=MUSIK.ctx=new AC();
+      const m=MUSIK.master=c.createGain(); m.gain.value=0;
+      const lp=c.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=3800;
+      const cp=c.createDynamicsCompressor();
+      m.connect(lp); lp.connect(cp); cp.connect(c.destination);
+      const nb=c.createBuffer(1,c.sampleRate,c.sampleRate), d=nb.getChannelData(0);
+      for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+      MUSIK.noise=nb;
+    }
+    const c=MUSIK.ctx; if(c.resume) c.resume();
+    if(!MUSIK.timer){ MUSIK.next=c.currentTime+.1; MUSIK.timer=setInterval(sched,100); }
+    MUSIK.master.gain.cancelScheduledValues(c.currentTime);
+    MUSIK.master.gain.setTargetAtTime(lvl(),c.currentTime,.4);
+    MUSIK.run=true; return true;
+  }
+  function stop(){
+    MUSIK.run=false;
+    if(MUSIK.timer){ clearInterval(MUSIK.timer); MUSIK.timer=null; }
+    const c=MUSIK.ctx; if(!c) return;
+    MUSIK.master.gain.cancelScheduledValues(c.currentTime);
+    MUSIK.master.gain.setTargetAtTime(0,c.currentTime,.12);
+  }
+  function setWant(v,save){
+    MUSIK.want=v; if(save) lsSet('musik',v?'on':'off');
+    if(v){ if(!start()) MUSIK.want=false; } else stop();
+    ui();
+  }
+  $('#musikBtn').addEventListener('click',()=>{ if(MUSIK.want&&!MUSIK.run) setWant(true,true); else setWant(!MUSIK.want,true); });
+  const sl=$('#musikVol');
+  const sv=parseInt(lsGet('musikVol'),10); if(isFinite(sv)&&sv>=0&&sv<=100) sl.value=sv;
+  MUSIK.vol=sl.value/100;
+  sl.addEventListener('input',()=>{
+    MUSIK.vol=sl.value/100; lsSet('musikVol',sl.value);
+    if(MUSIK.want&&!MUSIK.run) setWant(true,false);
+    if(MUSIK.run&&MUSIK.ctx) MUSIK.master.gain.setTargetAtTime(lvl(),MUSIK.ctx.currentTime,.05);
+  });
+  document.addEventListener('visibilitychange',()=>{
+    const c=MUSIK.ctx; if(!c) return;
+    if(document.hidden){ if(c.suspend) c.suspend(); }
+    else if(MUSIK.run&&c.resume) c.resume();
+  });
+  /* browser baru mengizinkan suara setelah siswa menyentuh halaman, jadi musik mulai pada sentuhan pertama */
+  const saved=lsGet('musik');
+  MUSIK.want=saved==='on'||(saved!=='off'&&MUSIK_AWAL);
+  ui();
+  if(MUSIK.want){
+    const first=e=>{
+      if(e.target&&e.target.closest&&e.target.closest('.mus')) return;
+      document.removeEventListener('pointerdown',first,true); document.removeEventListener('keydown',first,true);
+      if(MUSIK.want&&!MUSIK.run) setWant(true,false);
+    };
+    document.addEventListener('pointerdown',first,true); document.addEventListener('keydown',first,true);
+  }
+})();
+
+/* ---------- gambar kecil (piktogram) ---------- */
+function hoistPic(n){
+  const w=n*10+14, x0=48-w/2; let s='<line x1="6" y1="4" x2="90" y2="4" class="s-metal" stroke-width="4"/>';
+  s+=`<rect x="${x0}" y="8" width="${w}" height="10" rx="3" class="f-metal"/><rect x="${x0}" y="34" width="${w}" height="10" rx="3" class="f-metal"/>`;
+  for(let i=0;i<n;i++){const x=48+(i-(n-1)/2)*10; s+=`<line x1="${x}" y1="18" x2="${x}" y2="34" class="s-rope"/>`;}
+  s+='<line x1="48" y1="44" x2="48" y2="50" class="s-ink" stroke-width="2"/><rect x="38" y="50" width="20" height="16" rx="3" class="f-beban-s s-beban" stroke-width="2"/>';
+  s+=`<line x1="${x0+w+4}" y1="13" x2="${x0+w+4}" y2="50" class="s-rope"/><circle cx="${x0+w+4}" cy="54" r="4" class="f-kuasa"/>`;
+  return s;
+}
+const PIC={
+  flag:'<line x1="30" y1="8" x2="30" y2="66" class="s-ink" stroke-width="3"/><circle cx="30" cy="9" r="4" class="f-metal"/><rect x="33" y="12" width="34" height="20" rx="2" class="f-beban"/><line x1="18" y1="66" x2="46" y2="66" class="s-ground" stroke-width="4"/>',
+  hoist1:'<line x1="6" y1="4" x2="90" y2="4" class="s-metal" stroke-width="4"/><line x1="36" y1="4" x2="36" y2="32" class="s-rope"/><path d="M36 32 A12 12 0 0 0 60 32" class="s-rope"/><line x1="60" y1="32" x2="60" y2="14" class="s-rope"/><circle cx="48" cy="32" r="12" class="f-paper s-ink" stroke-width="2.5"/><line x1="48" y1="44" x2="48" y2="50" class="s-ink" stroke-width="2"/><rect x="38" y="50" width="20" height="16" rx="3" class="f-beban-s s-beban" stroke-width="2"/><circle cx="60" cy="11" r="4" class="f-kuasa"/>',
+  crane:'<rect x="10" y="60" width="34" height="8" rx="2" class="f-metal"/><line x1="27" y1="60" x2="27" y2="12" class="s-metal" stroke-width="5"/><line x1="27" y1="14" x2="84" y2="24" class="s-metal" stroke-width="4"/><circle cx="78" cy="23" r="3.5" class="f-ink"/><line x1="78" y1="24" x2="78" y2="44" class="s-rope"/><rect x="69" y="44" width="18" height="14" rx="2" class="f-beban-s s-beban" stroke-width="2"/>',
+  truckramp:'<line x1="4" y1="66" x2="92" y2="66" class="s-ground" stroke-width="3"/><line x1="8" y1="64" x2="64" y2="30" class="s-wood" stroke-width="5" stroke-linecap="round"/><rect x="64" y="28" width="30" height="8" rx="2" class="f-metal"/><rect x="64" y="36" width="30" height="18" class="f-ink" opacity=".75"/><circle cx="80" cy="58" r="7" class="f-paper s-ink" stroke-width="3"/><g transform="translate(36,47) rotate(-31)"><rect x="-7" y="-17" width="14" height="17" rx="3" class="f-beban-s s-beban" stroke-width="2"/></g>',
+  ramp:'<rect x="62" y="30" width="30" height="36" class="f-metal"/><line x1="6" y1="64" x2="62" y2="30" class="s-wood" stroke-width="5" stroke-linecap="round"/><circle cx="32" cy="44" r="6" class="f-paper s-ink" stroke-width="3"/><rect x="24" y="28" width="9" height="12" rx="3" class="f-brand"/><circle cx="29" cy="22" r="4.5" class="f-skin"/>',
+  road:'<polygon points="4,66 48,8 92,66" class="f-ground"/><polyline points="14,64 78,60 28,46 68,40 36,28 58,22 46,12" fill="none" class="s-kuasa" stroke-width="3"/>',
+  screw:'<rect x="32" y="6" width="32" height="9" rx="2" class="f-metal"/><rect x="42" y="15" width="12" height="46" class="f-metal"/><polygon points="42,61 54,61 48,69" class="f-metal"/><line x1="38" y1="24" x2="58" y2="30" class="s-ink" stroke-width="2.5"/><line x1="38" y1="34" x2="58" y2="40" class="s-ink" stroke-width="2.5"/><line x1="38" y1="44" x2="58" y2="50" class="s-ink" stroke-width="2.5"/>',
+  tweezers:'<line x1="12" y1="30" x2="82" y2="35" class="s-metal" stroke-width="5" stroke-linecap="round"/><line x1="12" y1="42" x2="82" y2="37" class="s-metal" stroke-width="5" stroke-linecap="round"/><circle cx="87" cy="36" r="5" class="f-beban"/>',
+  lever:'<line x1="8" y1="26" x2="88" y2="44" class="s-wood" stroke-width="6" stroke-linecap="round"/><polygon points="38,66 58,66 48,35" class="f-tumpu"/><circle cx="14" cy="19" r="7" class="f-beban"/><circle cx="82" cy="35" r="7" class="f-kuasa"/>',
+  lift:'<rect x="35" y="4" width="26" height="20" rx="4" class="f-beban-s s-beban" stroke-width="2.5"/><circle cx="48" cy="34" r="5" class="f-skin"/><line x1="48" y1="39" x2="48" y2="58" class="s-ink" stroke-width="3"/><line x1="48" y1="42" x2="38" y2="26" class="s-ink" stroke-width="3"/><line x1="48" y1="42" x2="58" y2="26" class="s-ink" stroke-width="3"/><line x1="48" y1="58" x2="40" y2="68" class="s-ink" stroke-width="3"/><line x1="48" y1="58" x2="56" y2="68" class="s-ink" stroke-width="3"/>'
+};
+PIC.hoist3=hoistPic(3); PIC.hoist4=hoistPic(4);
+const pic=k=>'<svg viewBox="0 0 96 72" aria-hidden="true">'+(PIC[k]||'')+'</svg>';
+$$('[data-pic]').forEach(el=>{el.innerHTML=pic(el.dataset.pic);});
+
+
+/* ---------- bagian Mulai ---------- */
+const OPTS=[
+  {k:'Angkat langsung',d:'Pakai tangan.',pic:'lift',type:'lift',F:1000,s:1,res:'fail',dur:3600,tool:'tidak ada, peti diangkat dengan tangan'},
+  {k:'Papan 2 m',d:'Didorong naik.',pic:'truckramp',type:'r2',F:500,s:2,res:'fail',dur:7000,tool:'Papan miring 2 m (KM = 2)'},
+  {k:'Papan 4 m',d:'Didorong naik.',pic:'truckramp',type:'r4',F:250,s:4,res:'ok',dur:8000,tool:'Papan miring 4 m (KM = 4)'},
+  {k:'Tuas',d:'Lengan kuasa 4×.',pic:'lever',type:'lever',F:250,s:.4,res:'part',dur:5200,tool:'Tuas: lengan kuasa 4 kali lengan beban (KM = 4)'},
+  {k:'Takal 4 tali',d:'Tali ditarik.',pic:'hoist4',type:'hoist',F:250,s:4,res:'ok',dur:10000,tool:'Takal pada derek: 4 tali menopang peti (KM = 4)'}
+];
+const tried=new Set();
+let okTried=false, mTok=0;
+const MG=190, MB=120, MX=410;
+const e2=q=>q<.5?2*q*q:1-Math.pow(-2*q+2,2)/2;
+const mseg=(u,a,b)=>clamp((u-a)/(b-a),0,1);
+function mCrate(cx,by,rot){
+  return `<g transform="translate(${cx.toFixed(1)},${by.toFixed(1)}) rotate(${(rot||0).toFixed(1)})"><rect x="-22" y="-44" width="44" height="44" rx="3" class="f-beban-s s-beban" stroke-width="3"/>`+
+    `<line x1="-22" y1="-31" x2="22" y2="-31" class="s-beban" stroke-width="1.5"/><line x1="-22" y1="-13" x2="22" y2="-13" class="s-beban" stroke-width="1.5"/>`+
+    `<text x="0" y="-18" text-anchor="middle" class="sv-m" style="font-size:11px">100 kg</text></g>`;
+}
+const mTag=(x,y,txt,cls)=>`<text x="${x.toFixed(0)}" y="${y.toFixed(0)}" class="tag tag-${cls}">${txt}</text>`;
+function mDraw(type,u){
+  let s='';
+  if(type==='lift'){
+    const h=9*e2(mseg(u,.2,.45))*(1-e2(mseg(u,.62,.82)));
+    const sh=(u>.25&&u<.62)?Math.sin(u*140)*1.3:0;
+    s+=mCrate(62+sh,MG-h,0);
+    s+=person(18,MG,{arm:'fwd',lean:(u>.2&&u<.7)?-12:6,col:'kuasa'});
+    if(u>.25) s+=mTag(62,128,'perlu 1.000 N','bad');
+  }
+  else if(type==='r2'||type==='r4'){
+    const L=type==='r2'?2:4, ok=type==='r4';
+    const run=Math.sqrt(L*L-1)*70, xf=MX-run, th=Math.atan2(70,run), thd=th*180/Math.PI, c=Math.cos(th), sn=Math.sin(th);
+    const P=p=>[xf+run*p,MG-70*p];
+    const ap=e2(mseg(u,0,.1));
+    s+=`<g opacity="${ap.toFixed(2)}"><polygon points="${xf},190 410,120 410,190" class="f-soft"/>`+
+       `<line x1="${xf}" y1="190" x2="410" y2="120" class="s-wood" stroke-width="8" stroke-linecap="round"/>`+
+       `<text x="${(xf+410)/2+8}" y="184" text-anchor="middle" class="sv-m" style="font-size:12px">papan ${L} m</text></g>`;
+    let cx=62,by=MG,rot=0,px,py,lean=14,arm='fwd',lab='';
+    if(u<.3){
+      const q=e2(mseg(u,.1,.3)); cx=62+(xf-62)*q; px=cx-50; py=MG; lab=u>.1?'dorong':'';
+    } else {
+      let p;
+      if(ok) p=.97*e2(mseg(u,.3,.84));
+      else { p=.28*e2(mseg(u,.3,.56))*(1-e2(mseg(u,.68,.9))); }
+      const Q=P(p); cx=Q[0]; by=Q[1]; rot=-thd;
+      px=cx-52*c; py=by+52*sn;
+      if(ok && u>.84){
+        const q=e2(mseg(u,.84,1)), Q0=P(.97);
+        cx=Q0[0]+(448-Q0[0])*q; by=Q0[1]+(MB-Q0[1])*q; rot=-thd*(1-q);
+        px=Q0[0]-52*c; py=Q0[1]+52*sn; arm='up'; lean=0;
+      }
+      if(!ok && u>.68){ lean=-8; arm='down'; }
+      else if(!ok && u>.5){ lean=20+4*Math.sin(u*90); }
+    }
+    s+=mCrate(cx,by,rot);
+    s+=person(px,py,{arm:arm,lean:lean,col:'kuasa'});
+    if(u>.12 && !(ok&&u>.9)){
+      s+=ok?mTag(cx-6,by-62,'F = 250 N','kuasa'):mTag(cx-6,by-62,(u>.3&&u<.7)?'F = 500 N &gt; 250 N':'','bad');
+    }
+  }
+  else if(type==='lever'){
+    const ap=e2(mseg(u,0,.12)), pr=e2(mseg(u,.12,.62)), a=9*pr, ar=a*Math.PI/180;
+    const kx=40+44*Math.cos(ar), ky=190-44*Math.sin(ar), vx=kx-114, vy=ky-182;
+    const Kx=114-4*vx, Ky=182-4*vy;
+    s+=`<g opacity="${ap.toFixed(2)}"><line x1="${(kx+.2*vx).toFixed(1)}" y1="${(ky+.2*vy).toFixed(1)}" x2="${Kx.toFixed(1)}" y2="${Ky.toFixed(1)}" class="s-wood" stroke-width="7" stroke-linecap="round"/>`+
+       `<polygon points="102,190 126,190 114,181" class="f-tumpu"/></g>`;
+    s+=`<g transform="translate(40,190) rotate(${(-a).toFixed(1)})"><rect x="0" y="-44" width="44" height="44" rx="3" class="f-beban-s s-beban" stroke-width="3"/>`+
+       `<line x1="0" y1="-31" x2="44" y2="-31" class="s-beban" stroke-width="1.5"/><line x1="0" y1="-13" x2="44" y2="-13" class="s-beban" stroke-width="1.5"/>`+
+       `<text x="22" y="-18" text-anchor="middle" class="sv-m" style="font-size:11px">100 kg</text></g>`;
+    s+=person(Kx+22,MG,{dir:-1,arm:'hang',lean:4+26*pr,col:'kuasa'});
+    if(u>.12){
+      s+=mTag(114,206,'tumpu','tumpu')+mTag(Kx+22,Math.min(Ky,150)-24,'kuasa 250 N','kuasa')+mTag(62,128,'beban 1.000 N','beban');
+    }
+    if(u>.7) s+=mTag(150,106,'peti hanya naik ±0,1 m','bad');
+  }
+  else {
+    const lift=e2(mseg(u,.08,.5)), mv=e2(mseg(u,.5,.8)), lo=e2(mseg(u,.8,.95));
+    const by=190-82*lift+12*lo, cx=62+388*mv, tx=cx;
+    s+=`<rect x="6" y="8" width="8" height="182" class="f-metal"/><rect x="6" y="8" width="520" height="6" class="f-metal"/>`;
+    s+=`<rect x="${tx-12}" y="14" width="24" height="7" rx="2" class="f-ink"/><rect x="${tx-22}" y="21" width="44" height="13" rx="3" class="f-brand"/>`+
+       `<circle cx="${tx-10}" cy="27" r="4" class="f-paper"/><circle cx="${tx+10}" cy="27" r="4" class="f-paper"/>`;
+    const lt=by-64;
+    for(const dx of [-15,-5,5,15]) s+=`<line x1="${cx+dx}" y1="34" x2="${cx+dx}" y2="${lt}" class="s-rope" stroke-width="2.5"/>`;
+    s+=`<rect x="${cx-22}" y="${lt}" width="44" height="12" rx="3" class="f-brand"/><line x1="${cx}" y1="${lt+12}" x2="${cx}" y2="${by-44}" class="s-ink" stroke-width="2.5"/>`;
+    s+=mCrate(cx,by,0);
+    const pulling=u>.08&&u<.5, px=20;
+    const arm=pulling?((Math.floor(u*34)%2)?'hang':'down'):'down';
+    const hx=px+{hang:12,down:5,up:10}[arm], hy=190+{hang:-38,down:-16,up:-46}[arm];
+    /* tali bebas: dari blok atas, lewat katrol pengarah di tiang, turun ke tangan */
+    s+=`<line x1="${tx-22}" y1="27" x2="12" y2="21" class="s-rope" stroke-width="2.5"/><circle cx="12" cy="21" r="4" class="f-paper s-ink" stroke-width="2"/>`+
+       `<line x1="9" y1="21" x2="${hx}" y2="${hy}" class="s-rope" stroke-width="2.5"/>`;
+    s+=person(px,MG,{arm:arm,lean:pulling?-10:0,col:'kuasa',dir:1});
+    if(u>.08){
+      s+=`<text x="${tx+34}" y="62" class="tag tag-kuasa" style="text-anchor:start">4 tali menopang</text><text x="${tx+34}" y="80" class="tag tag-kuasa" style="text-anchor:start">tarik F = 250 N</text>`;
+    }
+  }
+  $('#m-dyn').innerHTML=s;
+}
+function renderOpts(sel){
+  $('#m-opts').innerHTML=OPTS.map((o,i)=>`<button class="opt${tried.has(i)?' tried':''}" data-act="opt" data-i="${i}" aria-pressed="${sel===i}"><div class="pic">${pic(o.pic)}</div><b>${o.k}</b><span>${o.d}</span></button>`).join('');
+}
+ACT.opt=function(t){
+  const i=+t.dataset.i, o=OPTS[i], ok=o.res==='ok', tok=++mTok;
+  tried.add(i);
+  const st=$('#m-status'); st.className='fb'; st.textContent='';
+  $('#m-tool').textContent='Alat: '+o.tool;
+  $('#m-tool').hidden=false;
+  $('#m-f').textContent=fmt(o.F)+' N';
+  $('#m-s').textContent=fmt(o.s,o.s%1?1:0)+' m';
+  $('#m-w').textContent=fmt(o.F*o.s)+' J';
+  const fb=$('#m-fb'); fb.style.width=(o.F/1000*100)+'%'; fb.className=o.F<=250?'ok':'bad';
+  $('#m-sb').style.width=(o.s/4*100)+'%';
+  renderOpts(i);
+  const b=$(`#m-opts .opt[data-i="${i}"]`); if(b) b.focus({preventScroll:true});
+  function finish(){
+    if(tok!==mTok) return;
+    if(ok){ okTried=true; st.className='fb ok'; st.textContent=`Berhasil! Gaya ${fmt(o.F)} N, jarak ${fmt(o.s)} m. Usaha tetap ${fmt(o.F*o.s)} J.`; }
+    else if(o.res==='part'){ st.className='fb bad'; st.textContent='Gaya cukup (250 N), tetapi peti hanya naik sekitar 0,1 m. Tuas cocok untuk mengungkit, bukan mengangkat setinggi 1 m.'; }
+    else { st.className='fb bad'; st.textContent=`Belum. Butuh ${fmt(o.F)} N, kamu hanya 250 N.`; }
+    if(okTried && tried.size>=3) mark('mulai');
+  }
+  if(reduce){ mDraw(o.type,1); finish(); return; }
+  const t0=performance.now();
+  (function step(now){
+    if(tok!==mTok) return;
+    const p=clamp((now-t0)/o.dur,0,1); mDraw(o.type,p);
+    if(p<1) requestAnimationFrame(step); else finish();
+  })(t0);
+};
+renderOpts(-1);
+$('#m-dyn').innerHTML=mCrate(62,MG,0);
+
+
+/* ---------- Situasi: adegan longsor (film animasi) ---------- */
+const ease=q=>q<.5?2*q*q:1-Math.pow(-2*q+2,2)/2;
+const easeOut=q=>1-Math.pow(1-q,3);
+function hillY(x){
+  const P=[[0,70],[90,60],[170,110],[250,200],[330,290]];
+  if(x<=0) return 70;
+  for(let i=1;i<P.length;i++){ if(x<=P[i][0]){ const a=P[i-1],b=P[i]; return a[1]+(b[1]-a[1])*(x-a[0])/(b[0]-a[0]); } }
+  return 290;
+}
+const treeSvg=(x,sc)=>`<g transform="translate(${x},290) scale(${sc})"><rect x="-6" y="-60" width="12" height="60" class="f-wood2"/><circle cx="0" cy="-80" r="28" class="f-hill2"/><circle cx="-18" cy="-62" r="20" class="f-hill2"/><circle cx="18" cy="-62" r="20" class="f-hill2"/></g>`;
+function scenery(){
+  return '<rect width="640" height="290" class="f-sky"/>'+
+    '<polygon points="0,200 90,140 180,190 280,120 380,170 470,120 560,170 640,140 640,290 0,290" class="f-hill2" opacity=".45"/>'+
+    '<polygon points="0,290 0,70 90,60 170,110 250,200 330,290" class="f-hill"/>'+
+    treeSvg(40,1.1)+
+    '<rect x="0" y="290" width="640" height="70" class="f-road"/>'+
+    '<line x1="0" y1="320" x2="640" y2="320" class="s-roadline" stroke-width="3" stroke-dasharray="26 18"/>';
+}
+const rockSvg=(x,y,r)=>`<g transform="translate(${x},${y}) rotate(${r})"><path d="M-40,12 L-34,-18 L-8,-34 L24,-28 L42,-6 L38,16 L4,24 Z" class="f-rock"/><path d="M-8,-34 L24,-28 L8,-8 L-20,-10 Z" class="f-rock2" opacity=".55"/></g>`;
+const truckSvg=(x,tilt)=>`<g transform="translate(${x},280) rotate(${tilt||0} -75 10)">`+
+  '<rect x="-150" y="-14" width="150" height="8" class="f-ink"/><rect x="-150" y="-52" width="100" height="38" rx="3" class="f-metal"/>'+
+  '<rect x="-142" y="-84" width="38" height="32" rx="3" class="f-beban-s s-beban" stroke-width="2.5"/><line x1="-142" y1="-84" x2="-104" y2="-52" class="s-beban" stroke-width="2"/><line x1="-104" y1="-84" x2="-142" y2="-52" class="s-beban" stroke-width="2"/>'+
+  '<rect x="-96" y="-84" width="38" height="32" rx="3" class="f-beban-s s-beban" stroke-width="2.5"/><line x1="-96" y1="-84" x2="-58" y2="-52" class="s-beban" stroke-width="2"/><line x1="-58" y1="-84" x2="-96" y2="-52" class="s-beban" stroke-width="2"/>'+
+  '<path d="M-50,-14 L-50,-62 L-14,-62 L2,-36 L2,-14 Z" class="f-brand"/><rect x="-42" y="-54" width="22" height="18" rx="2" class="f-glass"/>'+
+  '<circle cx="-118" cy="-4" r="14" class="f-paper s-ink" stroke-width="6"/><circle cx="-24" cy="-4" r="14" class="f-paper s-ink" stroke-width="6"/></g>';
+function person(x,y,o){
+  o=o||{}; const lean=o.lean||0, sw=Math.sin(o.ph||0)*5, dir=o.dir||1, arm=o.arm||'down';
+  const A={fwd:[14,-24],up:[10,-46],down:[5,-16],hang:[12,-38]}[arm];
+  return `<g transform="translate(${x},${y}) scale(${dir},1)"><g transform="rotate(${lean} 0 -14)">`+
+    `<line x1="0" y1="-14" x2="${-4+sw}" y2="0" class="s-ink" stroke-width="3" stroke-linecap="round"/><line x1="0" y1="-14" x2="${4-sw}" y2="0" class="s-ink" stroke-width="3" stroke-linecap="round"/>`+
+    `<line x1="0" y1="-14" x2="0" y2="-32" class="s-${o.col||'kuasa'}" stroke-width="6" stroke-linecap="round"/>`+
+    `<line x1="0" y1="-29" x2="${A[0]}" y2="${A[1]}" class="s-ink" stroke-width="3" stroke-linecap="round"/>`+
+    `<circle cx="0" cy="-39" r="6" class="f-skin"/></g></g>`;
+}
+function filmFrame(t){
+  const c=(a,b)=>clamp((t-a)/(b-a),0,1);
+  const shake=(t>4.6&&t<5.3)?Math.sin(t*90)*4*(1-(t-4.6)/.7):0;
+  let s=`<g transform="translate(${shake},0)">`+scenery();
+  /* batu */
+  let rx,ry,rr;
+  if(t<3.2){ rx=84; ry=hillY(84)-26+(t>2.4?Math.sin(t*60)*1.5:0); rr=0; }
+  else if(t<4.6){ const q=c(3.2,4.6); rx=84+226*Math.pow(q,1.6); ry=hillY(rx)-26; rr=rx*2.2; }
+  else { const r=c(4.6,5.2); rx=310+80*easeOut(r); ry=(241.5+(266-241.5)*r)-36*Math.sin(Math.PI*r); rr=rx*2.2; }
+  s+=rockSvg(rx,ry,rr);
+  /* debu */
+  if(t>4.6){ for(let k=0;k<8;k++){ const age=t-4.6-k*.05; if(age>0&&age<2.2) s+=`<circle cx="${390+(k-3.5)*14*(1+age)}" cy="${288-age*18-(k%3)*4}" r="${8+age*14}" class="f-ground" opacity="${(.55*(1-age/2.2)).toFixed(2)}"/>`; } }
+  /* truk */
+  if(t>=6){ const q=c(6,10); const tilt=(t>9.3&&t<10.6)?-2.2*Math.sin(Math.PI*(t-9.3)/1.3):0; s+=truckSvg(-200+450*easeOut(q),tilt); }
+  /* warga */
+  if(t>=12){
+    for(let i=0;i<4;i++){
+      const q=c(12+i*.25,15), x0=700+i*30, x1=440+i*22, x=x0+(x1-x0)*easeOut(q), walking=q<1;
+      s+=person(x,290,{dir:-1,ph:walking?t*10+i:0,arm:q>=1?'up':'down',lean:q>=1?-4:0});
+    }
+  }
+  if(t>=15){
+    const p=c(15,15.4);
+    s+=`<g transform="translate(486,186) scale(${p.toFixed(2)})"><rect x="-26" y="-24" width="52" height="40" rx="12" class="f-paper s-ink" stroke-width="2.5"/><text x="0" y="8" text-anchor="middle" style="font:700 26px var(--font-display);fill:var(--fg)">?</text></g>`;
+  }
+  s+='</g>';
+  /* tiga alat */
+  const tools=[['lever','Tuas',170],['truckramp','Bidang miring',320],['hoist3','Katrol',470]];
+  tools.forEach(([k,n,cx],i)=>{
+    const a=c(16+i*.35,16.6+i*.35); if(a<=0) return;
+    const bob=Math.sin(t*3+i)*3;
+    s+=`<g transform="translate(${cx},${48+bob})" opacity="${a.toFixed(2)}"><rect x="-62" y="-34" width="124" height="106" rx="12" class="f-paper s-ink" stroke-width="2"/><g transform="translate(-48,-30)">${PIC[k]}</g><text x="0" y="62" text-anchor="middle" class="sv-t" font-weight="600">${n}</text></g>`;
+  });
+  /* cuaca */
+  const storm=t<5?1:clamp(1-(t-5)/3,0,1);
+  if(storm>0){
+    s+=`<rect width="640" height="360" fill="#2A4D68" opacity="${(.22*storm).toFixed(2)}"/>`;
+    let rain='';
+    for(let i=0;i<70;i++){ const x=(i*53+t*60)%640, y=((i*37)%360+t*420)%380; rain+=`M${x.toFixed(0)} ${y.toFixed(0)}l-4 14`; }
+    s+=`<path d="${rain}" stroke="#FFFFFF" stroke-width="1.8" fill="none" opacity="${(.8*storm).toFixed(2)}"/>`;
+    const fl=Math.max(0,1-Math.abs(t-1.2)/.12,1-Math.abs(t-2.5)/.12)*.55;
+    if(fl>0) s+=`<rect width="640" height="360" fill="#FFFFFF" opacity="${fl.toFixed(2)}"/>`;
+  }
+  return s;
+}
+const FILM={t:0,dur:20,playing:true,raf:0,last:0,seen:false};
+const CAPS=['Hujan deras. Tanah longsor!','Batu besar menutup jalan. Truk bantuan tertahan.','Bagaimana memindahkan batu? Bagaimana mengangkat bantuan ke truk?'];
+function filmDraw(){
+  $('#film-svg').innerHTML=filmFrame(FILM.t);
+  $('#film-seek').value=Math.round(FILM.t*10);
+  const ch=FILM.t<6?0:FILM.t<12?1:2;
+  const cap=$('#film-cap'); if(cap.textContent!==CAPS[ch]) cap.textContent=CAPS[ch];
+  const pp=$('#film-pp'); pp.textContent=FILM.playing?'Jeda':(FILM.t>=FILM.dur?'Putar ulang':'Putar');
+  if(FILM.t>=FILM.dur) FILM.seen=true;
+  $('#film-go').hidden=!FILM.seen;
+  $('#film-go').classList.toggle('pulse',FILM.t>=FILM.dur);
+}
+function filmLoop(now){
+  FILM.raf=0;
+  if(!FILM.last) FILM.last=now;
+  const dt=Math.min(.1,(now-FILM.last)/1000); FILM.last=now;
+  const visible=!$('#p-situasi').hidden && !$('#sit-film').hidden;
+  if(FILM.playing && visible){
+    FILM.t=Math.min(FILM.dur,FILM.t+dt); filmDraw();
+    if(FILM.t>=FILM.dur){ FILM.playing=false; filmDraw(); }
+  }
+  if(FILM.playing) FILM.raf=requestAnimationFrame(filmLoop);
+}
+function filmPlay(){ FILM.playing=true; FILM.last=0; if(!FILM.raf) FILM.raf=requestAnimationFrame(filmLoop); filmDraw(); }
+function filmPause(){ FILM.playing=false; filmDraw(); }
+$('#film-pp').addEventListener('click',()=>{
+  if(FILM.playing) filmPause();
+  else { if(FILM.t>=FILM.dur) FILM.t=0; filmPlay(); }
+});
+$('#film-seek').addEventListener('input',e=>{ FILM.t=clamp(+e.target.value/10,0,FILM.dur); filmDraw(); });
+if(reduce){ FILM.t=FILM.dur; FILM.playing=false; filmDraw(); } else { filmDraw(); filmPlay(); }
+
+/* ---------- Misi 1: pindahkan batu ---------- */
+const M1=[
+  {k:'Dorong langsung',pic:'push',F:5000,km:1,a:'dorong',hint:'Tanpa alat, KM = 1. Gaya sama dengan berat batu.'},
+  {k:'Tuas pendek',pic:'lever',F:1667,km:3,a:'tuasS',hint:'Lengan kuasa baru 3 kali lengan beban. Perpanjang tuasnya.'},
+  {k:'Tuas panjang',pic:'lever',F:1000,km:5,a:'tuasL'},
+  {k:'Katrol tetap',pic:'flag',F:5000,km:1,a:'tetap',hint:'Katrol tetap hanya mengubah arah gaya. KM = 1.'},
+  {k:'Takal 5 tali',pic:'hoist4',F:1000,km:5,a:'takal'}
+];
+const M1S={sel:-1,u:1,busy:false,solved:false,truckX:190,res:{}};
+function m1Draw(){
+  const o=M1S.sel>=0?M1[M1S.sel]:null, u=M1S.u, ok=o&&o.F<=1000, a=o&&o.a;
+  let s=scenery(), rx=390, ry=266, rr=138, extra='', front='';
+  const crowd=[];
+  const idle=()=>{for(let i=0;i<4;i++) crowd.push(person(440+i*22,290,{dir:-1,arm:'up'}));};
+  if(!a){ idle(); }
+  else if(a==='dorong'){
+    const k=Math.sin(u*40);
+    rx+=(u<1)?k*1.5:0;
+    for(let i=0;i<4;i++) crowd.push(person(282+i*16,290,{arm:'fwd',lean:u<1?16+5*Math.sin(u*30+i):2,ph:u<1?u*30+i:0}));
+  }
+  else if(a==='tuasS'||a==='tuasL'){
+    const L=a==='tuasL'?120:72, amp=a==='tuasL'?14:3;
+    let th, lift=0;
+    if(a==='tuasL'){
+      const e=ease(clamp(u/.3,0,1)), back=ease(clamp((u-.5)/.2,0,1));
+      th=10-amp*e*(1-back); lift=7*e*(1-back);
+      const q=clamp((u-.35)/.6,0,1);
+      if(u>=.35){ rx=390+100*ease(q); rr=138+(rx-390)*1.7; lift=0; }
+    } else { th=10-amp*Math.abs(Math.sin(u*Math.PI*3)); lift=1.5*Math.abs(Math.sin(u*Math.PI*3)); }
+    ry-=lift;
+    const rad=th*Math.PI/180, lx=352-L*Math.cos(rad), ly=282-L*Math.sin(rad);
+    front+=`<polygon points="340,290 346,278 358,278 364,290" class="f-rock2"/>`+
+      `<g transform="translate(352,282) rotate(${th})"><line x1="${-L}" y1="0" x2="26" y2="0" class="s-wood" stroke-width="9" stroke-linecap="round"/></g>`+
+      `<circle cx="352" cy="282" r="5" class="f-tumpu"/>`+
+      `<text x="352" y="306" text-anchor="middle" class="tag tag-tumpu">tumpu</text>`+
+      `<text x="${lx}" y="${Math.min(ly,262)-14}" text-anchor="middle" class="tag tag-kuasa">kuasa</text>`;
+    for(let i=0;i<4;i++) crowd.push(person(lx-2-i*11,290,{arm:'up',lean:18,col:'kuasa'}));
+  }
+  else if(a==='tetap'){
+    const k=u<1?Math.sin(u*50)*1.2:0;
+    rx+=k;
+    front+=`<line x1="548" y1="290" x2="548" y2="196" class="s-wood" stroke-width="8"/><circle cx="548" cy="196" r="9" class="f-paper s-ink" stroke-width="3"/>`+
+      `<path d="M${rx+28} 250 L540 196 M556 196 L578 232" fill="none" class="s-rope"/>`;
+    for(let i=0;i<4;i++) crowd.push(person(576+i*13,290,{arm:'up',lean:-16+(u<1?3*Math.sin(u*30+i):0),dir:-1}));
+  }
+  else if(a==='takal'){
+    const q=ease(clamp((u-.1)/.8,0,1)); rx=390+100*q; rr=138+(rx-390)*1.7;
+    const mx=rx+42;
+    front+='<rect x="544" y="244" width="12" height="36" rx="3" class="f-metal"/>';
+    front+=`<rect x="${mx-6}" y="244" width="12" height="36" rx="3" class="f-metal"/>`;
+    for(let i=0;i<5;i++) front+=`<line x1="${mx}" y1="${248+i*7}" x2="550" y2="${248+i*7}" class="s-rope"/>`;
+    front+=`<line x1="556" y1="262" x2="580" y2="262" class="s-rope"/>`;
+    for(let i=0;i<4;i++) crowd.push(person(584+i*13,290,{arm:'fwd',lean:-18+(u<1?3*Math.sin(u*30+i):0),dir:-1}));
+  }
+  const tx=M1S.truckX;
+  s+=rockSvg(rx,ry,rr)+truckSvg(tx,0)+front+crowd.join('');
+  $('#m1-svg').innerHTML=s;
+}
+function m1Meter(o){
+  const f=o?o.F:0;
+  $('#m1-f').textContent=o?fmt(o.F)+' N':'-';
+  $('#m1-km').textContent=o?'KM '+o.km:'-';
+  const b=$('#m1-fb'); b.style.width=(f/5000*100)+'%'; b.className=o?(f<=1000?'ok':'bad'):'';
+}
+function m1Pick(i){
+  if(M1S.busy) return;
+  M1S.sel=i; const o=M1[i], ok=o.F<=1000;
+  M1S.truckX=190; M1S.busy=true; M1S.u=0;
+  m1Meter(o); renderM1Opts();
+  const st=$('#m1-status'); st.className='fb'; st.textContent='';
+  const dur=ok?3600:2400, t0=performance.now();
+  function end(){
+    M1S.busy=false; M1S.u=1; M1S.res[i]=ok;
+    if(ok){
+      M1S.truckX=380; M1S.solved=true; mark('situasi');
+      st.className='fb ok'; st.textContent=`Berhasil! KM ${o.km}: gaya jadi ${fmt(o.F)} N. Jalan terbuka.`;
+      $('#m1-next').hidden=false;
+    } else {
+      st.className='fb bad'; st.textContent=`Belum. Butuh ${fmt(o.F)} N, tim hanya 1.000 N. ${o.hint||''}`;
+    }
+    const n=Object.keys(M1S.res).length;
+    st.textContent+=n<M1.length?` Coba alat lain (${n} dari ${M1.length} sudah dicoba).`:' Semua alat sudah dicoba.';
+    m1Draw(); renderM1Opts();
+    const b=$(`#m1-opts .opt[data-i="${i}"]`); if(b) b.focus({preventScroll:true});
+  }
+  if(reduce){ end(); return; }
+  (function step(now){
+    const p=clamp((now-t0)/dur,0,1); M1S.u=p; m1Draw();
+    if(p<1) requestAnimationFrame(step); else end();
+  })(t0);
+}
+function renderM1Opts(){
+  $('#m1-opts').innerHTML=M1.map((o,i)=>`<button class="opt${i in M1S.res?(M1S.res[i]?' won':' lost'):''}" data-act="m1" data-i="${i}" aria-pressed="${M1S.sel===i}"${M1S.busy?' disabled':''}><div class="pic">${pic(o.pic)}</div><b>${o.k}</b><span>${i in M1S.res?`KM ${o.km} \u00B7 ${M1S.res[i]?'berhasil \u2713':'belum cukup'}`:'coba'}</span></button>`).join('');
+}
+ACT.m1=t=>m1Pick(+t.dataset.i);
+$('#film-go').addEventListener('click',()=>{ filmPause(); $('#sit-film').hidden=true; $('#sit-m1').hidden=false; m1Draw(); });
+$('#m1-back').addEventListener('click',()=>{ $('#sit-m1').hidden=true; $('#sit-film').hidden=false; filmDraw(); });
+$('#m1-next').addEventListener('click',()=>show('mulai'));
+PIC.push='<path d="M52,30 L56,16 L68,10 L80,14 L88,26 L86,38 L56,40 Z" class="f-rock"/><circle cx="26" cy="22" r="5" class="f-skin"/><line x1="26" y1="27" x2="30" y2="46" class="s-kuasa" stroke-width="5" stroke-linecap="round"/><line x1="28" y1="32" x2="52" y2="30" class="s-ink" stroke-width="3"/><line x1="30" y1="46" x2="22" y2="62" class="s-ink" stroke-width="3"/><line x1="30" y1="46" x2="38" y2="62" class="s-ink" stroke-width="3"/><line x1="4" y1="64" x2="92" y2="64" class="s-ground" stroke-width="3"/>';
+renderM1Opts(); m1Meter(null); m1Draw();
+
+/* ---------- sub-tab umum (Tuas, Angkat bantuan, Bidang miring) ---------- */
+$$('.subtabs').forEach(g=>g.addEventListener('click',e=>{
+  const b=e.target.closest('[data-sub]'); if(!b) return;
+  const sec=g.closest('section');
+  $$('[data-sub]',g).forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  b.classList.remove('pulse');
+  $$('[data-sp]',sec).forEach(p=>{p.hidden=p.dataset.sp!==b.dataset.sub;});
+}));
+
+
+/* ---------- Soal kasus nyata: hitung keuntungan mekanis ---------- */
+const sg=(n,d=1)=>String(Math.round(n*Math.pow(10,d))/Math.pow(10,d)).replace('.',',');
+function slArrow(x1,y1,x2,y2,cls){
+  const a=Math.atan2(y2-y1,x2-x1), h=9, p1=[x2-h*Math.cos(a-.45),y2-h*Math.sin(a-.45)], p2=[x2-h*Math.cos(a+.45),y2-h*Math.sin(a+.45)];
+  return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="${cls}" stroke-width="3.5" stroke-linecap="round"/><polygon points="${x2},${y2} ${p1[0].toFixed(1)},${p1[1].toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}" class="${cls.replace('s-','f-')}"/>`;
+}
+function slDim(x1,x2,y,cls,txt){
+  const m=(x1+x2)/2;
+  return `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" class="${cls}" stroke-width="3"/><line x1="${x1}" y1="${y-6}" x2="${x1}" y2="${y+6}" class="${cls}" stroke-width="3"/><line x1="${x2}" y1="${y-6}" x2="${x2}" y2="${y+6}" class="${cls}" stroke-width="3"/>`+
+    `<text x="${m}" y="${y-7}" text-anchor="middle" class="sv-m" style="font-size:12px">${txt}</text>`;
+}
+function figLever(j,lb,lk,wt,u){
+  const tot=j===1?lb+lk:Math.max(lb,lk), s=270/tot; let tx,bx,kx;
+  if(j===1){ tx=35+lb*s; bx=35; kx=35+tot*s; } else { tx=35; bx=35+lb*s; kx=35+lk*s; }
+  const y=96, x1=Math.min(tx,bx,kx)-10, x2=Math.max(tx,bx,kx)+10, cl=v=>Math.min(Math.max(v,52),288);
+  let o=`<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" class="s-wood" stroke-width="9" stroke-linecap="round"/>`;
+  o+=`<polygon points="${tx-14},124 ${tx+14},124 ${tx},${y+4}" class="f-tumpu"/><text x="${cl(tx)}" y="141" class="tag tag-tumpu">tumpu</text>`;
+  o+=`<rect x="${bx-17}" y="${y-5-30}" width="34" height="30" rx="4" class="f-beban-s s-beban" stroke-width="2.5"/><text x="${cl(bx)}" y="${y-42}" class="tag tag-beban">${wt}</text>`;
+  if(j===1){ o+=slArrow(kx,44,kx,86,'s-kuasa')+`<text x="${cl(kx)}" y="34" class="tag tag-kuasa">kuasa F = ?</text>`; }
+  else if(kx-tx<130){ o+=slArrow(kx,154,kx,108,'s-kuasa')+`<text x="${kx+12}" y="132" class="tag tag-kuasa" style="text-anchor:start">kuasa F = ?</text>`; }
+  else { o+=slArrow(kx,154,kx,108,'s-kuasa')+`<text x="${Math.max(kx-12,60)}" y="132" class="tag tag-kuasa" style="text-anchor:end">kuasa F = ?</text>`; }
+  o+=slDim(Math.min(tx,bx),Math.max(tx,bx),172,'s-beban',sg(lb)+' '+u);
+  o+=slDim(Math.min(tx,kx),Math.max(tx,kx),194,'s-kuasa',sg(lk)+' '+u);
+  return `<svg viewBox="0 0 340 204" class="svg" role="img" aria-label="Gambar tuas jenis ${j}: tumpu, beban, dan kuasa dengan panjang lengannya">${o}</svg>`;
+}
+function figMiring(s,h,wt,su,hu){
+  const hor=Math.sqrt(s*s-h*h), k=Math.min(240/hor,118/h), x0=26, yb=176, bx=x0+hor*k, cy=yb-h*k, ang=Math.atan2(h*k,hor*k)*180/Math.PI;
+  let o=`<polygon points="${x0},${yb} ${bx.toFixed(1)},${yb} ${bx.toFixed(1)},${cy.toFixed(1)}" class="f-soft"/>`;
+  o+=`<line x1="${x0}" y1="${yb}" x2="${bx.toFixed(1)}" y2="${cy.toFixed(1)}" class="s-wood" stroke-width="7" stroke-linecap="round"/>`;
+  const t=.3, px=x0+(bx-x0)*t, py=yb-(yb-cy)*t;
+  o+=`<g transform="translate(${px.toFixed(1)},${(py-3).toFixed(1)}) rotate(${(-ang).toFixed(1)})"><rect x="${-(Math.max(38,wt.length*8+10)/2)}" y="-30" width="${Math.max(38,wt.length*8+10)}" height="30" rx="4" class="f-beban-s s-beban" stroke-width="2.5"/><text x="0" y="-11" text-anchor="middle" class="sv-m" style="font-size:11px">${wt}</text></g>`;
+  const mx=x0+(bx-x0)*.68, my=yb-(yb-cy)*.68;
+  o+=`<text transform="translate(${mx.toFixed(1)},${(my-12).toFixed(1)}) rotate(${(-ang).toFixed(1)})" text-anchor="middle" class="tag tag-kuasa" style="font-size:12px">panjang s = ${sg(s)} ${su}</text>`;
+  const dx=bx+16;
+  o+=`<line x1="${dx.toFixed(1)}" y1="${cy.toFixed(1)}" x2="${dx.toFixed(1)}" y2="${yb}" class="s-beban" stroke-width="3"/><line x1="${(dx-6).toFixed(1)}" y1="${cy.toFixed(1)}" x2="${(dx+6).toFixed(1)}" y2="${cy.toFixed(1)}" class="s-beban" stroke-width="3"/><line x1="${(dx-6).toFixed(1)}" y1="${yb}" x2="${(dx+6).toFixed(1)}" y2="${yb}" class="s-beban" stroke-width="3"/>`;
+  o+=`<text x="${(dx+9).toFixed(1)}" y="${((cy+yb)/2+4).toFixed(1)}" class="tag tag-beban" style="text-anchor:start;font-size:12px">h = ${sg(h)} ${hu}</text>`;
+  o+=`<line x1="10" y1="${yb}" x2="350" y2="${yb}" class="s-ground" stroke-width="3"/>`;
+  return `<svg viewBox="0 0 360 200" class="svg" role="img" aria-label="Gambar bidang miring dengan panjang ${sg(s)} ${su} dan tinggi ${sg(h)} ${hu}">${o}</svg>`;
+}
+function figKatrol(n,wt){
+  let o='<line x1="40" y1="12" x2="300" y2="12" class="s-metal" stroke-width="7" stroke-linecap="round"/>';
+  if(n===1){
+    o+=`<line x1="170" y1="12" x2="170" y2="36" class="s-ink" stroke-width="3"/><circle cx="170" cy="56" r="20" class="f-paper s-ink" stroke-width="4"/><circle cx="170" cy="56" r="4" class="f-ink"/>`;
+    o+=`<line x1="150" y1="56" x2="150" y2="136" class="s-rope"/><line x1="190" y1="56" x2="190" y2="132" class="s-rope"/>`;
+    o+=`<rect x="${150-Math.max(44,wt.length*8+12)/2}" y="136" width="${Math.max(44,wt.length*8+12)}" height="40" rx="4" class="f-beban-s s-beban" stroke-width="2.5"/><text x="150" y="161" text-anchor="middle" class="sv-m" style="font-size:12px">${wt}</text>`;
+    o+=slArrow(190,132,190,176,'s-kuasa')+`<text x="204" y="172" class="tag tag-kuasa" style="text-anchor:start">tarik F = ?</text>`;
+  } else {
+    const bw=n*26+14, cx=140, l=cx-bw/2, r=cx+bw/2;
+    o+=`<line x1="${cx-bw/4}" y1="12" x2="${cx-bw/4}" y2="24" class="s-ink" stroke-width="3"/><line x1="${cx+bw/4}" y1="12" x2="${cx+bw/4}" y2="24" class="s-ink" stroke-width="3"/>`;
+    o+=`<rect x="${l}" y="24" width="${bw}" height="16" rx="4" class="f-metal"/>`;
+    for(let i=0;i<n;i++){ const x=l+7+13+i*26; o+=`<circle cx="${x}" cy="32" r="5" class="f-paper"/>`; }
+    o+=`<rect x="${l}" y="104" width="${bw}" height="16" rx="4" class="f-brand"/>`;
+    for(let i=0;i<n;i++){ const x=l+20+i*26; o+=`<line x1="${x}" y1="40" x2="${x}" y2="104" class="s-rope"/>`; }
+    o+=`<line x1="${cx}" y1="120" x2="${cx}" y2="134" class="s-ink" stroke-width="3"/><rect x="${cx-Math.max(48,wt.length*8+12)/2}" y="134" width="${Math.max(48,wt.length*8+12)}" height="40" rx="4" class="f-beban-s s-beban" stroke-width="2.5"/><text x="${cx}" y="159" text-anchor="middle" class="sv-m" style="font-size:12px">${wt}</text>`;
+    const fx=r+30;
+    o+=`<polyline points="${r-8},32 ${fx},32 ${fx},118" class="s-rope"/>`+slArrow(fx,118,fx,170,'s-kuasa')+`<text x="${fx+12}" y="166" class="tag tag-kuasa" style="text-anchor:start">tarik F = ?</text>`;
+  }
+  return `<svg viewBox="0 0 340 204" class="svg" role="img" aria-label="Gambar sistem katrol dengan beban ${wt}">${o}</svg>`;
+}
+function figRoda(R,r,wt,u){
+  const cx=130, cy=92, Rp=74, rp=Math.max(7,Rp*r/R);
+  let o=`<circle cx="${cx}" cy="${cy}" r="${Rp}" class="f-soft s-ink" stroke-width="4"/>`;
+  for(let i=0;i<6;i++){ const a=i*Math.PI/3; o+=`<line x1="${cx}" y1="${cy}" x2="${(cx+Rp*Math.cos(a)).toFixed(1)}" y2="${(cy+Rp*Math.sin(a)).toFixed(1)}" class="s-metal" stroke-width="2.5"/>`; }
+  o+=`<circle cx="${cx}" cy="${cy}" r="${rp.toFixed(1)}" class="f-metal s-ink" stroke-width="3"/>`;
+  const a1=-Math.PI/5; o+=`<line x1="${cx}" y1="${cy}" x2="${(cx+Rp*Math.cos(a1)).toFixed(1)}" y2="${(cy+Rp*Math.sin(a1)).toFixed(1)}" class="s-kuasa" stroke-width="4" stroke-linecap="round"/>`;
+  o+=`<text x="${(cx+Rp*Math.cos(a1)+8).toFixed(1)}" y="${(cy+Rp*Math.sin(a1)-2).toFixed(1)}" class="tag tag-kuasa" style="text-anchor:start;font-size:12px">R = ${sg(R)} ${u}</text>`;
+  o+=`<line x1="${cx}" y1="${cy}" x2="${(cx-rp).toFixed(1)}" y2="${cy}" class="s-beban" stroke-width="4" stroke-linecap="round"/><line x1="${(cx-rp/2).toFixed(1)}" y1="${cy}" x2="40" y2="${cy+78}" class="s-beban" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+  o+=`<text x="6" y="${cy+94}" class="tag tag-beban" style="text-anchor:start;font-size:12px">r = ${sg(r)} ${u}</text>`;
+  const rx=cx+rp;
+  o+=`<line x1="${rx.toFixed(1)}" y1="${cy}" x2="${rx.toFixed(1)}" y2="162" class="s-rope"/><rect x="${(rx-20).toFixed(1)}" y="162" width="40" height="34" rx="4" class="f-beban-s s-beban" stroke-width="2.5"/><text x="${rx.toFixed(1)}" y="184" text-anchor="middle" class="sv-m" style="font-size:11px">${wt}</text>`;
+  o+=slArrow(cx-Rp,cy,cx-Rp,cy+36,'s-kuasa')+`<circle cx="${cx-Rp}" cy="${cy}" r="5" class="f-kuasa"/>`+`<text x="${cx-Rp-8}" y="${cy+30}" class="tag tag-kuasa" style="text-anchor:end;font-size:12px">F = ?</text>`;
+  return `<svg viewBox="0 0 340 204" class="svg" role="img" aria-label="Gambar roda berporos dengan jari-jari roda ${sg(R)} ${u} dan jari-jari poros ${sg(r)} ${u}">${o}</svg>`;
+}
+
+const KMq=(t,a,extra)=>Object.assign({t:t||'Keuntungan mekanis (KM)',a:a,u:''},extra||{});
+const SOAL={
+  tuas:{ rumus:'KM = lengan kuasa ÷ lengan beban<br>F = beban ÷ KM',
+    ringkas:'KM tuas = lengan kuasa ÷ lengan beban. Jika KM lebih dari 1, gaya yang dibutuhkan lebih kecil dari beban. Jika KM kurang dari 1 (pinset), tuas memberi ketelitian, bukan tenaga.',
+    cases:[
+    { judul:'Linggis mengungkit batu', pic:figLever(1,20,100,'600 N','cm'), legend:'tuas',
+      cerita:'Pak Budi mengungkit batu bangunan dengan linggis. Batu menumpu di ujung linggis, tumpu di batu kecil, dan Pak Budi menekan ujung satunya.',
+      data:[['Berat batu','600 N'],['Lengan beban','20 cm'],['Lengan kuasa','100 cm']],
+      q:[KMq('',5,{kebalik:'Hasilmu terbalik. Bagi lengan kuasa dengan lengan beban, bukan sebaliknya.'}),{t:'Gaya kuasa minimal',a:120,u:'N'}],
+      hint:'KM = lengan kuasa ÷ lengan beban. Lalu F = beban ÷ KM.',
+      langkah:['KM = lengan kuasa ÷ lengan beban = 100 ÷ 20 = <b>5</b>','F = beban ÷ KM = 600 ÷ 5 = <b>120 N</b>','Tumpu berada di antara beban dan kuasa, jadi ini tuas jenis 1.'] },
+    { judul:'Gerobak dorong', pic:figLever(2,60,150,'400 N','cm'), legend:'tuas',
+      cerita:'Kuli bangunan mendorong gerobak berisi pasir. Roda adalah titik tumpu, pasir berada di tengah, dan tangan mengangkat di gagang.',
+      data:[['Berat pasir dan gerobak','400 N'],['Roda ke pasir (lengan beban)','60 cm'],['Roda ke gagang (lengan kuasa)','150 cm']],
+      q:[KMq('',2.5,{kebalik:'Hasilmu terbalik. Bagi lengan kuasa dengan lengan beban.'}),{t:'Gaya kuasa minimal',a:160,u:'N'}],
+      hint:'Lengan diukur dari titik tumpu (roda). KM = 150 ÷ 60.',
+      langkah:['KM = lengan kuasa ÷ lengan beban = 150 ÷ 60 = <b>2,5</b>','F = beban ÷ KM = 400 ÷ 2,5 = <b>160 N</b>','Beban berada di antara tumpu dan kuasa, jadi ini tuas jenis 2. Pada jenis 2, KM selalu lebih dari 1.'] },
+    { judul:'Pinset', pic:figLever(3,10,4,'2 N','cm'), legend:'tuas',
+      cerita:'Satu lengan pinset dianggap sebagai tuas. Pangkal pinset adalah tumpu. Jari menekan 4 cm dari pangkal, dan ujung penjepit berada 10 cm dari pangkal.',
+      data:[['Gaya jepit di ujung (beban)','2 N'],['Lengan beban','10 cm'],['Lengan kuasa','4 cm']],
+      q:[KMq('',0.4,{kebalik:'Hasilmu terbalik. Lengan kuasa di sini lebih pendek, jadi KM kurang dari 1.'}),{t:'Gaya jari minimal',a:5,u:'N'}],
+      hint:'KM = lengan kuasa ÷ lengan beban = 4 ÷ 10. Hasilnya boleh kurang dari 1.',
+      langkah:['KM = lengan kuasa ÷ lengan beban = 4 ÷ 10 = <b>0,4</b>','F = beban ÷ KM = 2 ÷ 0,4 = <b>5 N</b>','Kuasa berada di antara tumpu dan beban, jadi ini tuas jenis 3. KM kurang dari 1: jari menekan lebih kuat, tetapi ujung pinset bergerak lebih jauh sehingga mudah mengatur penjepitan.'] }
+  ]},
+  miring:{ rumus:'KM = panjang bidang ÷ tinggi<br>F = beban ÷ KM',
+    ringkas:'KM bidang miring = panjang bidang ÷ tinggi. Makin panjang dan landai bidangnya, makin besar KM dan makin kecil gaya yang dibutuhkan. Jarak tempuh bertambah.',
+    cases:[
+    { judul:'Drum naik ke bak truk', pic:figMiring(3,1,'600 N','m','m'), legend:'miring',
+      cerita:'Dua orang menaikkan drum ke bak truk setinggi 1 m memakai papan sepanjang 3 m. Anggap permukaan papan licin.',
+      data:[['Berat drum','600 N'],['Panjang papan','3 m'],['Tinggi bak truk','1 m']],
+      q:[KMq('',3,{kebalik:'Hasilmu terbalik. Bagi panjang papan dengan tingginya.'}),{t:'Gaya dorong minimal',a:200,u:'N'}],
+      hint:'KM = panjang bidang ÷ tinggi.',
+      langkah:['KM = panjang ÷ tinggi = 3 ÷ 1 = <b>3</b>','F = beban ÷ KM = 600 ÷ 3 = <b>200 N</b>','Tanpa papan, drum harus diangkat dengan gaya 600 N.'] },
+    { judul:'Jalur kursi roda', pic:figMiring(6,0.5,'900 N','m','m'), legend:'miring',
+      cerita:'Sebuah jalur landai dibuat agar pengguna kursi roda dapat naik ke teras setinggi 0,5 m. Panjang jalurnya 6 m, dan berat kursi roda beserta penggunanya 900 N.',
+      data:[['Berat kursi roda dan pengguna','900 N'],['Panjang jalur','6 m'],['Tinggi teras','0,5 m']],
+      q:[KMq('',12,{kebalik:'Hasilmu terbalik. Bagi panjang jalur dengan tinggi teras.'}),{t:'Gaya dorong minimal',a:75,u:'N'}],
+      hint:'KM = 6 ÷ 0,5. Jangan lupa tinggi teras 0,5 m, bukan 5 m.',
+      langkah:['KM = panjang ÷ tinggi = 6 ÷ 0,5 = <b>12</b>','F = beban ÷ KM = 900 ÷ 12 = <b>75 N</b>','Jalur yang panjang dan landai membuat gaya dorong sangat kecil.'] },
+    { judul:'Jalan menanjak di gunung', pic:figMiring(800,100,'8.000 N','m','m'), legend:'miring',
+      cerita:'Sebuah jalan menanjak sepanjang 800 m membawa mobil pengangkut naik setinggi 100 m. Berat mobil dan muatannya 8.000 N.',
+      data:[['Berat mobil dan muatan','8.000 N'],['Panjang jalan','800 m'],['Ketinggian yang dicapai','100 m']],
+      q:[KMq('',8,{kebalik:'Hasilmu terbalik. Bagi panjang jalan dengan ketinggiannya.'}),{t:'Gaya minimal menaikkan mobil',a:1000,u:'N'}],
+      hint:'KM = 800 ÷ 100. Gaya = 8.000 ÷ KM.',
+      langkah:['KM = panjang ÷ tinggi = 800 ÷ 100 = <b>8</b>','F = beban ÷ KM = 8.000 ÷ 8 = <b>1.000 N</b>','Jalan berkelok memperpanjang lintasan, sehingga tanjakan jadi landai dan mesin tidak terlalu berat bekerja.'] }
+  ]},
+  katrol:{ rumus:'KM = jumlah tali yang menopang beban<br>F = beban ÷ KM',
+    ringkas:'KM katrol = jumlah tali yang menopang beban. Katrol tetap KM 1 (hanya mengubah arah gaya), katrol bergerak KM 2, dan takal memiliki KM sebanyak tali penopangnya.',
+    cases:[
+    { judul:'Menaikkan bendera', pic:figKatrol(1,'20 N'), legend:'katrol',
+      cerita:'Pada tiang bendera ada sebuah katrol tetap di puncak. Petugas menarik tali ke bawah agar bendera naik.',
+      data:[['Berat bendera dan tali','20 N'],['Jenis katrol','Tetap']],
+      q:[KMq('Berapa tali yang menopang beban? (= KM)',1),{t:'Gaya tarik minimal',a:20,u:'N'}],
+      hint:'Pada katrol tetap, hanya satu tali yang langsung menopang beban.',
+      langkah:['Hanya <b>1 tali</b> yang menopang beban, jadi KM = <b>1</b>','F = beban ÷ KM = 20 ÷ 1 = <b>20 N</b>','Katrol tetap tidak mengurangi gaya. Fungsinya mengubah arah gaya, sehingga lebih nyaman menarik ke bawah.'] },
+    { judul:'Cat naik ke lantai atas', pic:figKatrol(2,'400 N'), legend:'katrol',
+      cerita:'Tukang memakai katrol bergerak untuk mengangkat ember cat. Hitung berapa tali yang menopang blok bawah yang ikut naik bersama beban.',
+      data:[['Berat ember dan cat','400 N']],
+      q:[KMq('Berapa tali yang menopang beban? (= KM)',2),{t:'Gaya tarik minimal',a:200,u:'N'}],
+      hint:'Hitung tali yang tampak menopang blok bawah pada gambar.',
+      langkah:['Pada gambar ada <b>2 tali</b> yang menopang blok bawah, jadi KM = <b>2</b>','F = beban ÷ KM = 400 ÷ 2 = <b>200 N</b>','Katrol bergerak membuat gaya tarik separuh dari beban, tetapi tali harus ditarik 2 kali lebih panjang.'] },
+    { judul:'Derek dengan takal', pic:figKatrol(4,'1.200 N'), legend:'katrol',
+      cerita:'Sebuah derek memakai takal (gabungan katrol tetap dan bergerak) untuk mengangkat balok beton. Hitung tali yang menopang blok bawah.',
+      data:[['Berat balok beton','1.200 N']],
+      q:[KMq('Berapa tali yang menopang beban? (= KM)',4),{t:'Gaya tarik minimal',a:300,u:'N'}],
+      hint:'Hitung semua tali di antara blok atas dan blok bawah.',
+      langkah:['Ada <b>4 tali</b> di antara blok atas dan blok bawah, jadi KM = <b>4</b>','F = beban ÷ KM = 1.200 ÷ 4 = <b>300 N</b>','Makin banyak tali penopang, makin kecil gaya tarik, tetapi makin panjang tali yang harus ditarik.'] }
+  ]},
+  roda:{ rumus:'KM = jari-jari roda ÷ jari-jari poros<br>F = beban ÷ KM',
+    ringkas:'KM roda berporos = jari-jari roda ÷ jari-jari poros. Gaya diberikan pada roda yang besar, sedangkan beban berada di poros yang kecil. Makin besar rodanya, makin ringan memutarnya.',
+    cases:[
+    { judul:'Setir mobil', pic:figRoda(20,2,'100 N','cm'), legend:'roda',
+      cerita:'Setir mobil adalah roda yang menempel pada poros kecil. Pengemudi memutar setir, dan poros memutar roda depan yang membutuhkan gaya 100 N pada poros.',
+      data:[['Jari-jari setir (R)','20 cm'],['Jari-jari poros (r)','2 cm'],['Gaya yang dibutuhkan di poros','100 N']],
+      q:[KMq('',10,{kebalik:'Hasilmu terbalik. Bagi jari-jari roda (besar) dengan jari-jari poros (kecil).'}),{t:'Gaya tangan minimal',a:10,u:'N'}],
+      hint:'KM = jari-jari roda ÷ jari-jari poros.',
+      langkah:['KM = R ÷ r = 20 ÷ 2 = <b>10</b>','F = beban ÷ KM = 100 ÷ 10 = <b>10 N</b>','Karena setirnya besar, tangan cukup memberi gaya kecil.'] },
+    { judul:'Obeng', pic:figRoda(1.5,0.3,'50 N','cm'), legend:'roda',
+      cerita:'Gagang obeng yang besar adalah roda, dan batang obeng yang kecil adalah poros. Memutar sekrup membutuhkan gaya 50 N pada batang.',
+      data:[['Jari-jari gagang (R)','1,5 cm'],['Jari-jari batang (r)','0,3 cm'],['Gaya yang dibutuhkan di batang','50 N']],
+      q:[KMq('',5,{kebalik:'Hasilmu terbalik. Bagi jari-jari gagang dengan jari-jari batang.'}),{t:'Gaya tangan minimal',a:10,u:'N'}],
+      hint:'KM = 1,5 ÷ 0,3.',
+      langkah:['KM = R ÷ r = 1,5 ÷ 0,3 = <b>5</b>','F = beban ÷ KM = 50 ÷ 5 = <b>10 N</b>','Obeng bergagang tebal terasa lebih ringan diputar daripada yang bergagang tipis.'] },
+    { judul:'Engkol sumur timba', pic:figRoda(40,10,'120 N','cm'), legend:'roda',
+      cerita:'Sumur timba memakai engkol. Ujung engkol berputar membentuk roda, dan silinder penggulung tali adalah poros. Ember berisi air beratnya 120 N.',
+      data:[['Panjang engkol (R)','40 cm'],['Jari-jari silinder (r)','10 cm'],['Berat ember dan air','120 N']],
+      q:[KMq('',4,{kebalik:'Hasilmu terbalik. Bagi panjang engkol dengan jari-jari silinder.'}),{t:'Gaya putar minimal',a:30,u:'N'}],
+      hint:'Panjang engkol sama dengan jari-jari roda.',
+      langkah:['KM = R ÷ r = 40 ÷ 10 = <b>4</b>','F = beban ÷ KM = 120 ÷ 4 = <b>30 N</b>','Engkol yang lebih panjang membuat menimba lebih ringan, tetapi tangan berputar lebih jauh.'] }
+  ]}
+};
+const SL={};
+function slS(k){ return SL[k]||(SL[k]={i:0,st:SOAL[k].cases.map(()=>({v:[],tries:0,ok:false,hint:false,steps:false,res:[],msg:''}))}); }
+function slNum(s){
+  let t=String(s==null?'':s).trim().replace(/\s/g,'');
+  if(!t) return NaN;
+  if(/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(t)) t=t.replace(/\./g,'');
+  t=t.replace(',','.');
+  return /^-?\d+(\.\d+)?$/.test(t)?parseFloat(t):NaN;
+}
+const slEq=(x,a)=>Math.abs(x-a)<=Math.max(.011,Math.abs(a)*.01);
+const slEsc=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+function slRender(k,focus){
+  const box=$('#sl-'+k); if(!box) return;
+  const S=slS(k), D=SOAL[k], c=D.cases[S.i], t=S.st[S.i], n=D.cases.length;
+  const nOk=S.st.filter(x=>x.ok).length, all=nOk===n;
+  const dots=D.cases.map((x,i)=>`<button class="sl-dot${i===S.i?' cur':''}${S.st[i].ok?' ok':''}" data-act="sl" data-k="${k}" data-v="go" data-i="${i}" aria-label="Kasus ${i+1}${S.st[i].ok?', sudah benar':''}"${i===S.i?' aria-current="true"':''}>${S.st[i].ok?'✓':i+1}</button>`).join('');
+  const legend={tuas:'<span><i class="i-beban"></i>Lengan beban</span><span><i class="i-kuasa"></i>Lengan kuasa</span>',miring:'<span><i class="i-kuasa"></i>Panjang bidang (s)</span><span><i class="i-beban"></i>Tinggi (h)</span>',katrol:'<span><i class="i-kuasa"></i>Tali dan kuasa</span><span><i class="i-beban"></i>Beban</span>',roda:'<span><i class="i-kuasa"></i>Jari-jari roda (R)</span><span><i class="i-beban"></i>Jari-jari poros (r)</span>'}[k]||'';
+  const rows=c.q.map((q,j)=>{
+    const r=t.res[j]||'', cls=r==='ok'?'ok':(r?'bad':'');
+    const msg=r==='ok'?'<span class="fb ok">Benar</span>':r==='inv'?`<span class="fb bad">${q.kebalik}</span>`:r==='bad'?'<span class="fb bad">Belum tepat. Hitung lagi.</span>':'';
+    return `<div class="sl-q"><label for="sl-${k}-${j}">${j+1}. ${q.t}</label><div class="sl-ans"><input id="sl-${k}-${j}" class="in sl-in mono ${cls}" inputmode="decimal" autocomplete="off" placeholder="jawabanmu" data-k="${k}" data-j="${j}" value="${slEsc(t.v[j]||'')}"${t.ok?' readonly':''}><span class="sl-u">${q.u}</span></div>${msg}</div>`;
+  }).join('');
+  const steps=(t.ok||t.steps)?`<div class="sl-steps"><b>Pembahasan</b><ol>${c.langkah.map(x=>`<li>${x}</li>`).join('')}</ol></div>`:'';
+  box.innerHTML=
+    `<div class="sl-head"><div><p class="eyebrow">Soal kasus nyata</p><h2>Hitung keuntungan mekanisnya</h2></div><div class="sl-prog"><span class="chip ${all?'ok':'info'}">${nOk} dari ${n} benar</span><div class="sl-dots" role="group" aria-label="Pilih kasus">${dots}</div></div></div>`+
+    `<div class="sl-body"><div class="card sl-fig"><h3>Kasus ${S.i+1}: ${c.judul}</h3>${c.pic}<div class="legend sl-leg">${legend}</div><div class="sl-data">${c.data.map(d=>`<div><span>${d[0]}</span><b class="mono">${d[1]}</b></div>`).join('')}</div></div>`+
+    `<div class="card sl-ask"><p class="sl-story">${c.cerita}</p><div class="formula">${D.rumus}</div>${rows}`+
+    `<div class="seg"><button class="btn primary" data-act="sl" data-k="${k}" data-v="check"${t.ok?' disabled':''}>Periksa jawaban</button><button class="btn" data-act="sl" data-k="${k}" data-v="hint" aria-pressed="${t.hint}">Petunjuk</button>${(!t.ok&&t.tries>=2&&!t.steps)?`<button class="btn" data-act="sl" data-k="${k}" data-v="steps">Lihat langkah</button>`:''}</div>`+
+    (t.hint&&!t.ok?`<p class="sl-hint">Petunjuk: ${c.hint}</p>`:'')+
+    (t.msg?`<p class="fb bad" role="status">${t.msg}</p>`:'')+steps+
+    `<div class="seg sl-nav"><button class="btn" data-act="sl" data-k="${k}" data-v="prev"${S.i===0?' disabled':''}>Kasus sebelumnya</button><button class="btn${t.ok&&S.i<n-1?' primary':''}" data-act="sl" data-k="${k}" data-v="next" data-fk="slnext"${S.i===n-1?' disabled':''}>Kasus berikutnya</button></div>`+
+    (all?`<p class="sl-sum"><b>Semua kasus selesai.</b> ${D.ringkas}</p>`:'')+
+    `</div></div>`;
+  if(focus){ const f=$(focus,box); if(f) f.focus({preventScroll:true}); }
+}
+function slCheck(k){
+  const S=slS(k), c=SOAL[k].cases[S.i], t=S.st[S.i];
+  if(t.ok) return;
+  const vals=c.q.map((q,j)=>slNum(t.v[j]));
+  const empty=vals.findIndex(x=>isNaN(x));
+  if(empty>=0){ t.msg='Isi semua jawaban dengan angka dulu.'; t.res=[]; slRender(k,`#sl-${k}-${empty}`); return; }
+  t.msg=''; t.tries++;
+  t.res=c.q.map((q,j)=>{
+    if(slEq(vals[j],q.a)) return 'ok';
+    if(q.kebalik&&slEq(vals[j],1/q.a)&&Math.abs(q.a-1)>.01) return 'inv';
+    return 'bad';
+  });
+  if(t.res.every(r=>r==='ok')){ t.ok=true; slRender(k,'[data-fk="slnext"]'); }
+  else{ const w=t.res.findIndex(r=>r!=='ok'); slRender(k,`#sl-${k}-${w}`); }
+}
+ACT.sl=t=>{
+  const k=t.dataset.k, v=t.dataset.v, S=slS(k), n=SOAL[k].cases.length, st=S.st[S.i];
+  if(v==='check') return slCheck(k);
+  if(v==='hint'){ st.hint=!st.hint; return slRender(k,`[data-v="hint"]`); }
+  if(v==='steps'){ st.steps=true; return slRender(k); }
+  if(v==='go'){ S.i=clamp(+t.dataset.i,0,n-1); return slRender(k,'.sl-in'); }
+  if(v==='next'){ S.i=Math.min(n-1,S.i+1); return slRender(k,'.sl-in'); }
+  if(v==='prev'){ S.i=Math.max(0,S.i-1); return slRender(k,'.sl-in'); }
+};
+document.addEventListener('input',e=>{
+  const t=e.target; if(!t.classList||!t.classList.contains('sl-in')) return;
+  const S=slS(t.dataset.k), st=S.st[S.i], j=+t.dataset.j;
+  st.v[j]=t.value; if(st.res[j]){ st.res[j]=''; t.classList.remove('ok','bad'); const m=t.closest('.sl-q').querySelector('.fb'); if(m) m.remove(); }
+});
+document.addEventListener('keydown',e=>{
+  const t=e.target; if(e.key==='Enter'&&t.classList&&t.classList.contains('sl-in')){ e.preventDefault(); slCheck(t.dataset.k); }
+});
+Object.keys(SOAL).forEach(k=>slRender(k));
+ACT.kgo=t=>{
+  const soal=t.dataset.v==='soal';
+  $('#p-katrol .ka').hidden=soal; $('#ka-soal').hidden=!soal;
+  if(soal) slRender('katrol');
+  window.scrollTo(0,0);
+};
+
+/* ---------- Roda berporos: simulasi ---------- */
+const RB={R:20,r:4,W:100,a:0,tok:0};
+const RBID={R:'roda',r:'poros',W:'beban'};
+function rbDraw(){
+  const R=RB.R, r=RB.r, W=RB.W, a=RB.a, th=a*Math.PI/180, cx=190, cy=128, k=3.1, Rp=R*k, rp=Math.max(7,r*k);
+  const rise=rp*th, topY=262-rise;
+  let s=`<g transform="rotate(${(-a).toFixed(1)} ${cx} ${cy})"><circle cx="${cx}" cy="${cy}" r="${Rp.toFixed(1)}" class="f-soft s-ink" stroke-width="4"/>`;
+  for(let i=0;i<6;i++){ const q=i*Math.PI/3; s+=`<line x1="${cx}" y1="${cy}" x2="${(cx+Rp*Math.cos(q)).toFixed(1)}" y2="${(cy+Rp*Math.sin(q)).toFixed(1)}" class="s-metal" stroke-width="3"/>`; }
+  s+=`<circle cx="${cx}" cy="${cy}" r="${rp.toFixed(1)}" class="f-metal s-ink" stroke-width="3"/><line x1="${cx}" y1="${cy}" x2="${cx}" y2="${(cy-rp).toFixed(1)}" class="s-ink" stroke-width="2.5"/>`;
+  s+=slArrow(cx-Rp,cy,cx-Rp,cy+38,'s-kuasa')+`<circle cx="${(cx-Rp).toFixed(1)}" cy="${cy}" r="6" class="f-kuasa"/></g>`;
+  const rx=cx+rp;
+  s+=`<line x1="${rx.toFixed(1)}" y1="${cy}" x2="${rx.toFixed(1)}" y2="${topY.toFixed(1)}" class="s-rope"/>`;
+  s+=`<rect x="${(rx-24).toFixed(1)}" y="${topY.toFixed(1)}" width="48" height="38" rx="4" class="f-beban-s s-beban" stroke-width="2.5"/><text x="${rx.toFixed(1)}" y="${(topY+24).toFixed(1)}" text-anchor="middle" class="sv-m" style="font-size:12px">${W} N</text>`;
+  s+=`<text x="392" y="24" text-anchor="end" class="tag tag-kuasa" style="text-anchor:end">R = ${R} cm</text><text x="392" y="44" text-anchor="end" class="tag tag-beban" style="text-anchor:end">r = ${r} cm</text>`;
+  $('#rb-svg').innerHTML=s;
+  const km=R/r, F=W/km;
+  $('#rb-ro').innerHTML=
+    `<div><dt>Keuntungan mekanis</dt><dd>${fmt(km,km%1?2:0)}</dd></div>`+
+    `<div><dt>Gaya tangan minimal</dt><dd>${fmt(F,F%1?1:0)} N</dd></div>`+
+    `<div><dt>Tangan bergerak</dt><dd>${fmt(R*th,1)} cm</dd></div>`+
+    `<div><dt>Beban naik</dt><dd>${fmt(r*th,1)} cm</dd></div>`;
+  const ch=$('#rb-chip');
+  ch.className='chip '+(km>1?'ok':'info');
+  ch.textContent=km>1?`KM ${fmt(km,km%1?2:0)}: gaya ${fmt(F,F%1?1:0)} N jauh lebih kecil dari beban ${W} N`:'Roda sama besar dengan poros: tidak ada keuntungan mekanis';
+  $('#rb-rodav').textContent=R+' cm'; $('#rb-porosv').textContent=r+' cm'; $('#rb-bebanv').textContent=W+' N'; $('#rb-sudutv').textContent=Math.round(a)+'°';
+}
+['R','r','W'].forEach(id=>$('#rb-'+RBID[id]).addEventListener('input',e=>{ RB.tok++; RB[id]=+e.target.value; rbDraw(); }));
+$('#rb-a').addEventListener('input',e=>{ RB.tok++; RB.a=+e.target.value; rbDraw(); });
+$('#rb-auto').addEventListener('click',()=>{
+  const tok=++RB.tok;
+  if(reduce){ RB.a=RB.a>=180?0:180; $('#rb-a').value=RB.a; rbDraw(); return; }
+  const from=RB.a>=180?0:RB.a, t0=performance.now(), dur=3200*(180-from)/180+300;
+  (function step(now){
+    if(tok!==RB.tok) return;
+    const p=clamp((now-t0)/dur,0,1); RB.a=from+(180-from)*p; $('#rb-a').value=RB.a; rbDraw();
+    if(p<1) requestAnimationFrame(step);
+  })(t0);
+});
+$('#rb-reset').addEventListener('click',()=>{ RB.tok++; RB.a=0; $('#rb-a').value=0; rbDraw(); });
+rbDraw();
+
+/* ---------- Tuas: simulasi ---------- */
+const LV={j:1,lb:30,lk:60,F:30,W:60};
+const GEO={1:{px:320,py:170,s:2.8,l:105,r:105,max:14},2:{px:60,py:150,s:5,l:0,r:105,max:10},3:{px:60,py:150,s:5,l:0,r:105,max:10}};
+const JDESC={
+  1:'Tumpu di tengah. Contoh: jungkat-jungkit.',
+  2:'Beban di tengah. Contoh: pemecah kemiri.',
+  3:'Kuasa di tengah. Contoh: pinset.'
+};
+function lvNormalize(changed){
+  const lb=$('#lv-lb'), lk=$('#lv-lk');
+  if(LV.j===2){
+    lb.min=10; lb.max=90; lk.min=20; lk.max=100;
+    if(LV.lk<=LV.lb){ if(changed==='lb') LV.lk=LV.lb+10; else LV.lb=LV.lk-10; }
+  } else if(LV.j===3){
+    lk.min=10; lk.max=90; lb.min=20; lb.max=100;
+    if(LV.lk>=LV.lb){ if(changed==='lk') LV.lb=LV.lk+10; else LV.lk=LV.lb-10; }
+  } else { lb.min=10; lb.max=100; lk.min=10; lk.max=100; }
+  lb.value=LV.lb; lk.value=LV.lk;
+}
+function lvDraw(){
+  const g=GEO[LV.j], j=LV.j;
+  /* batas slider gaya mengikuti kebutuhan, supaya "Cari gaya yang pas" selalu bisa seimbang */
+  const need=LV.W*LV.lb/LV.lk, fMax=clamp(Math.ceil(need*1.5/10)*10,100,1000), fi=$('#lv-f');
+  if(+fi.max!==fMax) fi.max=fMax;
+  if(LV.F>fMax) LV.F=fMax;
+  fi.value=LV.F;
+  const diff=LV.F*LV.lk-LV.W*LV.lb;
+  const k=clamp(diff/300,-1,1);
+  const deg=(j===1?1:-1)*k*g.max, a=deg*Math.PI/180, c=Math.cos(a), sn=Math.sin(a);
+  const P=d=>[g.px+d*g.s*c,g.py+d*g.s*sn];
+  const A=P(-g.l), B=P(g.r);
+  const Pb=P(j===1?-LV.lb:LV.lb), Pk=P(LV.lk);
+  let s='<line x1="16" y1="250" x2="624" y2="250" class="s-ground" stroke-width="3"/>';
+  s+=`<polygon points="${g.px-22},250 ${g.px+22},250 ${g.px},${g.py+10}" class="f-tumpu-s s-tumpu" stroke-width="3"/>`;
+  s+=`<line x1="${A[0]}" y1="${A[1]}" x2="${B[0]}" y2="${B[1]}" class="s-wood" stroke-width="14" stroke-linecap="round"/>`;
+  s+=`<circle cx="${g.px}" cy="${g.py}" r="7" class="f-tumpu"/>`;
+  const lx=j===1?g.px-28:g.px+28, an=j===1?'end':'start';
+  s+=`<text x="${lx}" y="240" text-anchor="${an}" class="sv-t t-tumpu" font-weight="600">titik tumpu</text>`;
+  /* beban */
+  s+=`<rect x="${Pb[0]-24}" y="${Pb[1]-51}" width="48" height="42" rx="5" class="f-beban-s s-beban" stroke-width="3"/>`;
+  s+=`<text x="${Pb[0]}" y="${Pb[1]-25}" class="ld">${LV.W} N</text>`;
+  s+=`<text x="${Pb[0]}" y="${Pb[1]-58}" text-anchor="middle" class="sv-t t-beban" font-weight="600">beban</text>`;
+  /* kuasa */
+  const len=Math.min(14+LV.F*0.35,62);
+  if(LV.F>0){
+    if(j===1){
+      s+=`<line x1="${Pk[0]}" y1="${Pk[1]-10-len}" x2="${Pk[0]}" y2="${Pk[1]-22}" class="s-kuasa" stroke-width="5"/>`;
+      s+=`<polygon points="${Pk[0]-9},${Pk[1]-24} ${Pk[0]+9},${Pk[1]-24} ${Pk[0]},${Pk[1]-9}" class="f-kuasa"/>`;
+    } else {
+      s+=`<line x1="${Pk[0]}" y1="${Pk[1]+10+len}" x2="${Pk[0]}" y2="${Pk[1]+22}" class="s-kuasa" stroke-width="5"/>`;
+      s+=`<polygon points="${Pk[0]-9},${Pk[1]+24} ${Pk[0]+9},${Pk[1]+24} ${Pk[0]},${Pk[1]+9}" class="f-kuasa"/>`;
+    }
+  }
+  if(j===1){
+    s+=`<text x="${Pk[0]}" y="${Pk[1]-18-len-10}" text-anchor="middle" class="sv-m t-kuasa">kuasa F = ${LV.F} N</text>`;
+  } else {
+    /* label di samping anak panah agar tidak menabrak garis ukur di bawah */
+    const left=Pk[0]>440;
+    s+=`<text x="${Pk[0]+(left?-14:14)}" y="${Pk[1]+34+len/2}" text-anchor="${left?'end':'start'}" class="sv-m t-kuasa">kuasa F = ${LV.F} N</text>`;
+  }
+  /* garis ukur */
+  const dim=(x1,x2,y,col,txt)=>{
+    const mid=(x1+x2)/2;
+    return `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" class="s-${col}" stroke-width="2"/>`+
+      `<line x1="${x1}" y1="${y-5}" x2="${x1}" y2="${y+5}" class="s-${col}" stroke-width="2"/>`+
+      `<line x1="${x2}" y1="${y-5}" x2="${x2}" y2="${y+5}" class="s-${col}" stroke-width="2"/>`+
+      `<text x="${mid}" y="${y-7}" text-anchor="middle" class="sv-m t-${col}">${txt}</text>`;
+  };
+  s+=dim(g.px,Pb[0],274,'beban','lengan beban = '+LV.lb+' cm');
+  s+=dim(g.px,Pk[0],302,'kuasa','lengan kuasa = '+LV.lk+' cm');
+
+  /* hasil ukur */
+  const tol=0.03*LV.W*LV.lb;
+  let state,cls;
+  if(LV.F>0 && Math.abs(diff)<=tol){state='Seimbang';cls='ok';}
+  else if(diff>0){state='Beban terangkat';cls='ok';}
+  else {state='Beban turun, tambah gaya';cls='bad';}
+  s+=`<text x="16" y="28" class="st-${cls}" style="font:700 17px var(--font-body)">${state}</text>`;
+  $('#lv-svg').innerHTML=s;
+  $('#lv-chip').innerHTML=`<span class="chip ${cls}">${state}</span>`;
+  const km=LV.lk/LV.lb, fmin=LV.W*LV.lb/LV.lk;
+  $('#lv-ro').innerHTML=
+    `<div><dt>Beban × lengan beban</dt><dd>${fmt(LV.W*LV.lb)} N·cm</dd></div>`+
+    `<div><dt>Kuasa × lengan kuasa</dt><dd>${fmt(LV.F*LV.lk)} N·cm</dd></div>`+
+    `<div><dt>KM = lengan kuasa ÷ lengan beban</dt><dd>${fmt(km,2)}</dd></div>`+
+    `<div><dt>Gaya minimum</dt><dd>${fmt(fmin,1)} N</dd></div>`;
+  $('#lv-note').textContent=km>1.001?'KM > 1: gaya lebih kecil dari beban.'
+    :km<0.999?'KM < 1: gaya lebih besar, beban bergerak lebih jauh.'
+    :'KM = 1: gaya sama dengan beban.';
+  $('#lv-wv').textContent=LV.W+' N'; $('#lv-lbv').textContent=LV.lb+' cm'; $('#lv-lkv').textContent=LV.lk+' cm'; $('#lv-fv').textContent=LV.F+' N';
+  $('#lv-jd').textContent=JDESC[j];
+  if(LV.F>0 && Math.abs(diff)<=tol) lvFound=true;
+}
+let lvFound=false;
+function lvSetJ(j){
+  LV.j=j;
+  if(j===1){LV.lb=30;LV.lk=60;}
+  if(j===2){LV.lb=30;LV.lk=90;}
+  if(j===3){LV.lb=80;LV.lk=30;}
+  LV.F=Math.round(LV.W*LV.lb/LV.lk);
+  $('#lv-f').value=LV.F;
+  $$('#lv-j button').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.j===j)));
+  lvNormalize(); lvDraw();
+}
+$$('#lv-j button').forEach(b=>b.addEventListener('click',()=>lvSetJ(+b.dataset.j)));
+$('#lv-w').addEventListener('input',e=>{LV.W=+e.target.value;lvDraw();});
+$('#lv-lb').addEventListener('input',e=>{LV.lb=+e.target.value;lvNormalize('lb');lvDraw();});
+$('#lv-lk').addEventListener('input',e=>{LV.lk=+e.target.value;lvNormalize('lk');lvDraw();});
+$('#lv-f').addEventListener('input',e=>{LV.F=+e.target.value;lvDraw();});
+$('#lv-auto').addEventListener('click',()=>{
+  LV.F=clamp(Math.ceil(LV.W*LV.lb/LV.lk),0,1000); $('#lv-f').value=LV.F; lvDraw();
+});
+lvNormalize(); lvDraw();
+
+/* ---------- Tuas: kenali jenis ---------- */
+const IT=[
+  {name:'Jungkat-jungkit',task:'Anak di kiri akan diangkat naik oleh anak di kanan.',
+   pts:{A:'ujung kiri, tempat anak yang diangkat',B:'tengah papan, penyangga',C:'ujung kanan, tempat anak yang menekan'},
+   pos:{A:[92,97],B:[240,120],C:[388,143]},ans:{tumpu:'B',beban:'A',kuasa:'C'},jenis:1,
+   why:'Tumpu di antara beban dan kuasa: tuas jenis 1.',
+   art:'<line x1="30" y1="205" x2="450" y2="205" class="s-ground" stroke-width="3"/><polygon points="212,205 268,205 240,126" class="f-metal"/>'+
+     '<line x1="60" y1="92" x2="420" y2="148" class="s-wood" stroke-width="14" stroke-linecap="round"/>'+
+     '<circle cx="92" cy="62" r="12" class="f-skin"/><rect x="80" y="74" width="24" height="26" rx="8" class="f-brand"/>'+
+     '<circle cx="388" cy="94" r="12" class="f-skin"/><rect x="376" y="106" width="24" height="28" rx="8" class="f-brand"/>'},
+  {name:'Pemecah kemiri',task:'Kemiri dipecahkan dengan menekan ujung tangkai ke bawah.',
+   pts:{A:'engsel, tempat kedua tangkai menyatu',B:'kemiri yang akan dipecahkan',C:'ujung tangkai tempat tangan menekan'},
+   pos:{A:[110,160],B:[200,134],C:[330,32]},ans:{tumpu:'A',beban:'B',kuasa:'C'},jenis:2,
+   why:'Beban (kemiri) di antara tumpu (engsel) dan kuasa (tangan): tuas jenis 2. KM lebih dari 1.',
+   art:'<rect x="20" y="166" width="440" height="10" rx="2" class="f-wood2"/><rect x="40" y="176" width="10" height="44" class="f-wood2"/><rect x="430" y="176" width="10" height="44" class="f-wood2"/>'+
+     '<line x1="110" y1="160" x2="380" y2="160" class="s-metal" stroke-width="10" stroke-linecap="round"/>'+
+     '<line x1="110" y1="160" x2="350" y2="22" class="s-metal" stroke-width="10" stroke-linecap="round"/>'+
+     '<circle cx="200" cy="134" r="21" class="f-soil"/><circle cx="110" cy="160" r="7" class="f-ink"/>'+
+     '<line x1="358" y1="0" x2="358" y2="12" class="s-kuasa" stroke-width="4"/><polygon points="349,10 367,10 358,23" class="f-kuasa"/>'},
+  {name:'Pinset',task:'Pinset menjepit manik-manik kecil di ujungnya.',
+   pts:{A:'pangkal pinset, tempat kedua lengan menyatu',B:'bagian tengah, tempat jari menekan',C:'ujung penjepit yang memegang manik-manik'},
+   pos:{A:[66,108],B:[240,114],C:[428,120]},ans:{tumpu:'A',beban:'C',kuasa:'B'},jenis:3,
+   why:'Kuasa di antara tumpu dan beban: tuas jenis 3. KM kurang dari 1.',
+   art:'<line x1="60" y1="134" x2="430" y2="124" stroke-width="10" stroke-linecap="round" class="s-metal" opacity=".55"/>'+
+     '<line x1="60" y1="108" x2="430" y2="120" stroke-width="10" stroke-linecap="round" class="s-metal"/>'+
+     '<path d="M60 105 Q38 121 60 137" stroke-width="10" class="s-metal"/>'+
+     '<circle cx="442" cy="122" r="9" class="f-beban-s s-beban" stroke-width="3"/>'+
+     '<rect x="222" y="48" width="36" height="52" rx="18" class="f-skin"/><rect x="222" y="142" width="36" height="52" rx="18" class="f-skin"/>'},
+  {name:'Linggis pengungkit batu',task:'Batu besar di jalan akan diungkit dengan linggis.',
+   pts:{A:'batu besar yang diungkit',B:'batu kecil penyangga linggis',C:'ujung linggis tempat tangan menekan'},
+   pos:{A:[76,160],B:[200,194],C:[408,126]},ans:{tumpu:'B',beban:'A',kuasa:'C'},jenis:1,
+   why:'Tumpu (batu kecil) di antara beban (batu besar) dan kuasa (tangan): tuas jenis 1.',
+   art:'<line x1="10" y1="205" x2="470" y2="205" class="s-ground" stroke-width="3"/>'+
+     '<polygon points="178,205 186,182 214,176 224,205" class="f-rock2"/>'+
+     '<line x1="112" y1="198" x2="440" y2="118" class="s-metal" stroke-width="9" stroke-linecap="round"/>'+
+     '<path d="M26 205 L30 150 L62 118 L110 112 L128 150 L124 205 Z" class="f-rock"/><path d="M62 118 L110 112 L100 140 L70 140 Z" class="f-rock2" opacity=".55"/>'+
+     '<ellipse cx="430" cy="120" rx="11" ry="8" class="f-skin"/>'+
+     '<line x1="430" y1="72" x2="430" y2="94" class="s-kuasa" stroke-width="4"/><polygon points="421,92 439,92 430,104" class="f-kuasa"/>'},
+  {name:'Pembuka tutup botol',task:'Tutup botol akan dicongkel naik oleh pembuka.',
+   pts:{A:'ujung pembuka yang bertumpu di atas tutup',B:'kait yang menahan tepi tutup',C:'ujung pegangan tempat tangan menarik ke atas'},
+   pos:{A:[95,150],B:[170,132],C:[425,71]},ans:{tumpu:'A',beban:'B',kuasa:'C'},jenis:2,
+   why:'Beban di antara tumpu dan kuasa: tuas jenis 2. KM lebih dari 1.',
+   art:'<rect x="88" y="170" width="52" height="66" class="f-glass"/><rect x="62" y="150" width="120" height="20" rx="4" class="f-metal"/>'+
+     '<line x1="75" y1="160" x2="170" y2="160" class="s-ink" stroke-width="1" opacity=".4"/>'+
+     '<path d="M170 132 L172 166 L162 170" stroke-width="6" class="s-metal"/>'+
+     '<line x1="95" y1="150" x2="430" y2="70" class="s-metal" stroke-width="12" stroke-linecap="round"/>'+
+     '<ellipse cx="440" cy="62" rx="18" ry="13" class="f-skin"/>'},
+  {name:'Joran pancing',task:'Joran diangkat untuk menarik ikan yang tergantung di ujung tali.',
+   pts:{A:'pangkal joran, tangan yang menahan',B:'tengah joran, tangan yang menarik ke atas',C:'ikan di ujung tali joran'},
+   pos:{A:[62,170],B:[215,122],C:[412,138]},ans:{tumpu:'A',beban:'C',kuasa:'B'},jenis:3,
+   why:'Kuasa (tangan di tengah joran) di antara tumpu (pangkal) dan beban (ikan): tuas jenis 3. KM kurang dari 1.',
+   art:'<rect x="0" y="198" width="480" height="42" class="f-glass"/>'+
+     '<line x1="60" y1="170" x2="425" y2="58" class="s-wood" stroke-width="6" stroke-linecap="round"/>'+
+     '<line x1="425" y1="58" x2="412" y2="122" class="s-ink" stroke-width="1.5"/>'+
+     '<ellipse cx="412" cy="138" rx="30" ry="16" class="f-beban"/><polygon points="438,138 462,124 462,152" class="f-beban"/><circle cx="394" cy="132" r="3" class="f-paper"/>'+
+     '<circle cx="62" cy="170" r="9" class="f-skin"/><circle cx="215" cy="122" r="9" class="f-skin"/>'+
+     '<line x1="215" y1="108" x2="215" y2="86" class="s-kuasa" stroke-width="4"/><polygon points="206,88 224,88 215,74" class="f-kuasa"/>'}
+];
+const IDS=IT.map(()=>({a:{tumpu:null,beban:null,kuasa:null},role:'tumpu',attempts:0,stage:'assign',res:null,jtry:0,jfb:''}));
+let cur=0, focusKey=null;
+const roleOf=(a,p)=>Object.keys(a).find(k=>a[k]===p)||null;
+function renderId(){
+  const it=IT[cur], st=IDS[cur];
+  const dots=IT.map((x,i)=>`<button class="dot${i===cur?' on':''}${IDS[i].stage==='done'?' ok':''}" data-act="goto" data-i="${i}" aria-label="Alat ${i+1}: ${x.name}"${i===cur?' aria-current="true"':''}>${i+1}</button>`).join('');
+  const pts=Object.entries(it.pos).map(([k,[x,y]])=>{
+    const r=roleOf(st.a,k);
+    return `<g class="pt${r?' has '+r:''}" data-act="pt" data-p="${k}" data-fk="pt-${k}" tabindex="0" role="button" aria-label="Titik ${k}: ${it.pts[k]}${r?', dipilih sebagai '+ROLE[r].n:''}">`+
+      `<circle cx="${x}" cy="${y}" r="17" class="pt-c"/><text x="${x}" y="${y+5}" text-anchor="middle" class="pt-l">${k}</text></g>`+
+      (r?`<text x="${x}" y="${y-26}" class="tag tag-${r}">${ROLE[r].n}</text>`:'');
+  }).join('');
+  const legend=Object.entries(it.pts).map(([k,v])=>`<li><b>${k}</b> ${v}</li>`).join('');
+  const chips=['tumpu','beban','kuasa'].map(r=>`<button class="role ${r}" data-act="role" data-r="${r}" data-fk="role-${r}" aria-pressed="${st.role===r}"><i></i>${ROLE[r].n}${st.a[r]?' = '+st.a[r]:''}</button>`).join('');
+  let body='';
+  if(st.stage==='assign'){
+    const ready=Object.values(st.a).every(Boolean);
+    let fb='';
+    if(st.res){
+      fb='<ul class="fblist" aria-live="polite">'+['tumpu','beban','kuasa'].map(r=>`<li class="${st.res[r]?'ok':'bad'}">${st.res[r]?'✓':'✗'} ${ROLE[r].n} = ${st.a[r]}${st.res[r]?'':' (belum tepat)'}</li>`).join('')+'</ul>';
+      if(st.attempts>=1) fb+='<p class="cap">Petunjuk: tumpu = titik putar. Beban = yang dipindahkan. Kuasa = tempat tangan menekan.</p>';
+    }
+    body=`<div><div class="lbl">1. Pilih peran, ketuk titik pada gambar</div><div class="roles" style="margin-top:.4rem">${chips}</div></div>`+
+      `<div class="seg"><button class="btn primary" data-act="check" data-fk="check"${ready?'':' disabled'}>Periksa jawaban</button>`+
+      (st.attempts>=2?'<button class="btn" data-act="reveal">Tampilkan jawaban</button>':'')+'</div>'+fb;
+  } else if(st.stage==='jenis'){
+    body=`<div class="lbl">2. Peran benar! Tuas jenis berapa?</div>`+
+      `<div class="seg">${[1,2,3].map(n=>`<button class="btn" data-act="jenis" data-n="${n}" data-fk="j${n}">Tuas jenis ${n}</button>`).join('')}</div>`+
+      `<p class="fb bad" aria-live="polite">${st.jfb}</p>`;
+  } else {
+    const last=IDS.every(s=>s.stage==='done');
+    body=`<p class="chip ok" style="width:fit-content">Benar: tuas jenis ${it.jenis}</p><p>${it.why}</p>`+
+      `<div class="seg"><button class="btn primary" data-act="next" data-fk="next">${cur<IT.length-1?'Alat berikutnya':'Ulangi dari alat pertama'}</button></div>`+
+      (last?'<p class="callout">Semua alat selesai. Lanjut ke Bidang miring.</p>':'');
+  }
+  $('#id-card').innerHTML=
+    `<div style="display:grid;gap:.9rem"><div class="sub"><h2>${it.name}</h2><div class="dots">${dots}</div></div>`+
+    `<p><b>Tugas:</b> ${it.task}</p>`+
+    `<svg class="svg" viewBox="0 0 480 240" role="img" aria-label="Gambar ${it.name} dengan tiga titik berlabel A, B, dan C">${it.art}${pts}</svg>`+
+    body+'</div>';
+  $('#id-side').innerHTML=
+    `<h2>Keterangan titik</h2><ul class="order" style="list-style:none">${legend}</ul>`+
+    `<details class="note"><summary>Kartu bantu jenis tuas</summary><ul class="order">`+
+    `<li><b>Jenis 1:</b> beban, tumpu, kuasa. Tumpu di antara.</li><li><b>Jenis 2:</b> tumpu, beban, kuasa. Beban di antara.</li><li><b>Jenis 3:</b> tumpu, kuasa, beban. Kuasa di antara.</li></ul></details>`+
+    `<p class="cap">Selesai: ${IDS.filter(s=>s.stage==='done').length} dari ${IT.length} alat.</p>`;
+  if(focusKey){ const f=$(`[data-fk="${focusKey}"]`); if(f&&!f.disabled) f.focus(); }
+}
+function fk(t){ const f=t.closest('[data-fk]'); focusKey=f?f.dataset.fk:null; }
+ACT.goto=t=>{cur=+t.dataset.i;focusKey=null;renderId();};
+ACT.role=t=>{fk(t);IDS[cur].role=t.dataset.r;renderId();};
+ACT.pt=t=>{
+  const st=IDS[cur]; if(st.stage!=='assign') return;
+  fk(t);
+  const p=t.dataset.p;
+  for(const k in st.a) if(st.a[k]===p) st.a[k]=null;
+  st.a[st.role]=p; st.res=null;
+  const nxt=['tumpu','beban','kuasa'].find(k=>!st.a[k]); if(nxt) st.role=nxt;
+  renderId();
+};
+ACT.check=t=>{
+  const st=IDS[cur], it=IT[cur]; fk(t);
+  st.attempts++;
+  st.res={}; let all=true;
+  for(const r of ['tumpu','beban','kuasa']){ st.res[r]=st.a[r]===it.ans[r]; if(!st.res[r]) all=false; }
+  if(all){ st.stage='jenis'; focusKey='j1'; }
+  renderId();
+};
+ACT.reveal=()=>{const st=IDS[cur];st.a={...IT[cur].ans};st.stage='jenis';focusKey='j1';renderId();};
+ACT.jenis=t=>{
+  const st=IDS[cur], it=IT[cur], n=+t.dataset.n; fk(t);
+  if(n===it.jenis){ st.stage='done'; focusKey='next'; if(IDS.every(s=>s.stage==='done')) mark('tuas'); }
+  else { st.jtry++; st.jfb='Belum tepat. Cari titik yang ada di tengah.'; }
+  renderId();
+};
+ACT.next=()=>{cur=(cur+1)%IT.length;focusKey=null;renderId();};
+renderId();
+
+/* ---------- Bidang miring ---------- */
+const MI={s:2,u:0,busy:false,won:false};
+const WM=1000, LIM=250;
+function miDraw(){
+  const S=68, gy=246, ty=gy-S, xe=590;
+  const run=Math.sqrt(MI.s*MI.s-1), xs=xe-run*S;
+  const al=Math.atan2(S,run*S), ad=al*180/Math.PI, ca=Math.cos(al), sa=Math.sin(al);
+  let g='<rect x="0" y="246" width="700" height="34" class="f-ground"/>';
+  g+=`<polygon points="${xs},${gy} ${xe},${ty} ${xe},${gy}" class="f-soft" opacity=".7"/>`;
+  g+=`<rect x="${xe}" y="${ty}" width="${700-xe}" height="14" rx="3" class="f-metal"/><rect x="${xe}" y="${ty+14}" width="${700-xe}" height="28" class="f-ink" opacity=".75"/>`;
+  g+=`<circle cx="650" cy="224" r="22" class="f-paper s-ink" stroke-width="8"/>`;
+  g+=`<line x1="${xs}" y1="${gy}" x2="${xe}" y2="${ty}" class="s-wood" stroke-width="9" stroke-linecap="round"/>`;
+  g+=`<line x1="${xe-14}" y1="${ty}" x2="${xe-14}" y2="${gy}" class="s-ink" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+  g+=`<text x="${xe-20}" y="${(ty+gy)/2+4}" text-anchor="end" class="sv-m">h = 1 m</text>`;
+  const mx=(xs+xe)/2, my=(gy+ty)/2;
+  g+=`<text x="${mx+26*sa}" y="${my+26*ca+14}" text-anchor="middle" class="sv-m t-beban">s = ${fmt(MI.s,1)} m</text>`;
+  /* posisi drum */
+  const u=MI.u; let cx,cy,rot,arrow=true;
+  if(u<=0.9){ const k=u/0.9, f=0.08+0.84*k; cx=xs+(xe-xs)*f; cy=gy+(ty-gy)*f; rot=-ad; }
+  else { const k=(u-0.9)/0.1, f=0.92; const x1=xs+(xe-xs)*f, y1=gy+(ty-gy)*f; cx=x1+(xe+34-x1)*k; cy=y1+(ty-y1)*k; rot=-ad*(1-k); arrow=false; }
+  const ok=WM/MI.s<=LIM;
+  g+=`<g transform="translate(${cx},${cy}) rotate(${rot})"><rect x="-19" y="-52" width="38" height="48" rx="6" class="f-beban-s s-beban" stroke-width="3"/>`+
+     `<line x1="-19" y1="-38" x2="19" y2="-38" class="s-beban" stroke-width="1.5"/><line x1="-19" y1="-20" x2="19" y2="-20" class="s-beban" stroke-width="1.5"/>`+
+     (arrow?`<line x1="-86" y1="-26" x2="-26" y2="-26" class="${ok?'s-kuasa':'s-beban'}" stroke-width="5"/><polygon points="-28,-35 -28,-17 -14,-26" class="${ok?'f-kuasa':'f-beban'}"/>`:'')+`</g>`;
+  if(arrow){
+    const rad=-rot*Math.PI/180, c=Math.cos(rad), s2=Math.sin(rad);
+    const lx=cx+(-78)*c+(-40)*s2, ly=cy+(-78)*(-s2)+(-40)*c;
+    g+=`<text x="${lx}" y="${ly}" text-anchor="middle" class="sv-m ${ok?'t-kuasa':'t-beban'}">F = ${fmt(WM/MI.s)} N</text>`;
+  }
+  $('#mi-svg').innerHTML=g;
+  const F=WM/MI.s;
+  $('#mi-sv').textContent=fmt(MI.s,1)+' m';
+  $('#mi-chip').innerHTML=`<span class="chip ${F<=LIM?'ok':'bad'}">${F<=LIM?'Pak Budi sanggup':'Melebihi 250 N'}</span>`;
+  $('#mi-ro').innerHTML=
+    `<div><dt>Gaya dorong F</dt><dd>${fmt(F,0)} N</dd></div>`+
+    `<div><dt>KM = s ÷ h</dt><dd>${fmt(MI.s,1)}</dd></div>`+
+    `<div><dt>Jarak dorong</dt><dd>${fmt(MI.s,1)} m</dd></div>`+
+    `<div><dt>Usaha = F × s</dt><dd>${fmt(F*MI.s)} J</dd></div>`;
+}
+function miAnim(){
+  if(MI.busy) return;
+  const F=WM/MI.s, ok=F<=LIM, fb=$('#mi-fb');
+  MI.busy=true; $('#mi-go').disabled=true;
+  fb.className='fb'; fb.textContent='';
+  const dur=ok?2400:1400, t0=performance.now();
+  function end(){
+    MI.busy=false; $('#mi-go').disabled=false;
+    if(ok){ MI.u=1; fb.className='fb ok'; fb.textContent=`Berhasil! Gaya ${fmt(F)} N cukup.`; if(!MI.won){MI.won=true;mark('bidang-miring');} }
+    else { MI.u=0; fb.className='fb bad'; fb.textContent=`Tidak kuat. Butuh ${fmt(F)} N. Perpanjang papan.`; }
+    miDraw();
+  }
+  if(reduce){ end(); return; }
+  (function step(now){
+    const p=clamp((now-t0)/dur,0,1);
+    MI.u = ok ? p : Math.sin(p*Math.PI)*0.12;
+    miDraw();
+    if(p<1) requestAnimationFrame(step); else end();
+  })(t0);
+}
+$('#mi-s').addEventListener('input',e=>{ if(MI.busy) return; MI.s=+e.target.value; MI.u=0; $('#mi-fb').textContent=''; miDraw(); });
+$('#mi-go').addEventListener('click',miAnim);
+$('#mi-reset').addEventListener('click',()=>{ if(MI.busy) return; MI.u=0; $('#mi-fb').textContent=''; miDraw(); });
+$$('#mi-pred button').forEach(b=>b.addEventListener('click',()=>{
+  const p=b.dataset.p, fb=$('#mi-predfb');
+  fb.className='fb '+(p==='b'?'ok':'bad');
+  fb.textContent=p==='b'
+    ?'Tepat! Papan 4 m: 250 N. Papan 2 m: 500 N. Buktikan di bawah.'
+    :'Belum. Papan lebih panjang lebih landai. Buktikan di bawah.';
+}));
+miDraw();
+
+/* ---------- Katrol ---------- */
+const KT=[
+  {name:'Tetap',n:1,ex:'Tiang bendera',pic:'flag',note:'Hanya mengubah arah gaya.'},
+  {name:'Bergerak',n:2,ex:'Pengerek barang',pic:'hoist1',note:'Gaya jadi setengah. Tali 2 kali lebih panjang.'},
+  {name:'Takal 3',n:3,ex:'Takal bengkel',pic:'hoist3',note:'Gaya jadi sepertiga. Tali 3 kali lebih panjang.'},
+  {name:'Takal 4',n:4,ex:'Derek',pic:'crane',note:'Gaya jadi seperempat. Tali 4 kali lebih panjang.'}
+];
+const KA={t:0,W:120,p:50,seen:new Set([0]),busy:false};
+function kLoad(x,top){
+  return `<line x1="${x}" y1="${top}" x2="${x}" y2="${top+12}" class="s-ink" stroke-width="3"/>`+
+    `<rect x="${x-30}" y="${top+12}" width="60" height="44" rx="6" class="f-beban-s s-beban" stroke-width="3"/>`+
+    `<text x="${x}" y="${top+39}" class="ld">${KA.W} N</text>`;
+}
+function kHand(x,y,dir,F){
+  const tri=dir==='down'?`${x-9},${y+16} ${x+9},${y+16} ${x},${y+30}`:`${x-9},${y-16} ${x+9},${y-16} ${x},${y-30}`;
+  const hy=dir==='down'?y+46:y-38;
+  return `<g class="khand" style="cursor:grab;touch-action:none"><circle cx="${x}" cy="${y}" r="30" fill="rgba(0,0,0,0)" style="pointer-events:all"/>`+
+    `<circle cx="${x}" cy="${y}" r="10" class="f-kuasa"/><polygon points="${tri}" class="f-kuasa"/>`+
+    `<text x="${x+16}" y="${y+5}" class="sv-m t-kuasa">F = ${fmt(F,0)} N</text>`+
+    `<text x="${x}" y="${hy}" text-anchor="middle" class="sv-t t-kuasa" font-weight="600">seret</text></g>`;
+}
+function kBadge(x,y,i){ return `<circle cx="${x}" cy="${y}" r="10" class="f-kuasa"/><text x="${x}" y="${y+4}" text-anchor="middle" class="bd">${i}</text>`; }
+function kDraw(){
+  const T=KT[KA.t], n=T.n, H=KA.p/100*44, cx=180, F=KA.W/n;
+  let s='<rect x="40" y="10" width="280" height="8" rx="2" class="f-metal"/>';
+  if(n===1){
+    const cy=84, lx=cx-22, rx=cx+22, yl=300-H, yh=170+H;
+    s+=`<line x1="${cx}" y1="18" x2="${cx}" y2="62" class="s-metal" stroke-width="5"/>`;
+    s+=`<line x1="${lx}" y1="${cy}" x2="${lx}" y2="${yl}" class="s-rope"/><line x1="${rx}" y1="${cy}" x2="${rx}" y2="${yh}" class="s-rope"/>`;
+    s+=`<circle cx="${cx}" cy="${cy}" r="22" class="f-paper s-ink" stroke-width="4"/><circle cx="${cx}" cy="${cy}" r="4" class="f-ink"/>`;
+    s+=kLoad(lx,yl)+kBadge(lx,(cy+yl)/2,1)+kHand(rx,yh,'down',F);
+  } else if(n===2){
+    const ax=cx-22, bx=cx+22, yM=250-H, yh=150-2*H;
+    s+=`<rect x="${ax-6}" y="18" width="12" height="8" class="f-ink"/>`;
+    s+=`<line x1="${ax}" y1="26" x2="${ax}" y2="${yM}" class="s-rope"/><path d="M${ax} ${yM} A22 22 0 0 0 ${bx} ${yM}" class="s-rope"/><line x1="${bx}" y1="${yM}" x2="${bx}" y2="${yh}" class="s-rope"/>`;
+    s+=`<circle cx="${cx}" cy="${yM}" r="22" class="f-paper s-ink" stroke-width="4"/><circle cx="${cx}" cy="${yM}" r="4" class="f-ink"/>`;
+    s+=kLoad(cx,yM+22)+kBadge(ax,(26+yM)/2,1)+kBadge(bx,(yM+yh)/2+14,2)+kHand(bx,yh,'up',F);
+  } else {
+    const f=Math.ceil(n/2), m=Math.floor(n/2), bw=n*24+16, yM=240-H, yh=150+n*H;
+    const xs=i=>cx+(i-(n-1)/2)*24, tx=cx+bw/2+16, x0=cx-bw/2;
+    s+=`<line x1="${x0+6}" y1="18" x2="${x0+6}" y2="44" class="s-metal" stroke-width="4"/><line x1="${x0+bw-6}" y1="18" x2="${x0+bw-6}" y2="44" class="s-metal" stroke-width="4"/>`;
+    for(let i=0;i<n;i++) s+=`<line x1="${xs(i)}" y1="72" x2="${xs(i)}" y2="${yM}" class="s-rope"/>`;
+    s+=`<line x1="${x0+bw}" y1="58" x2="${tx}" y2="58" class="s-rope"/><line x1="${tx}" y1="58" x2="${tx}" y2="${yh}" class="s-rope"/>`;
+    s+=`<rect x="${x0}" y="44" width="${bw}" height="28" rx="6" class="f-metal"/><rect x="${x0}" y="${yM}" width="${bw}" height="28" rx="6" class="f-metal"/>`;
+    for(let i=0;i<f;i++) s+=`<circle cx="${cx+(i-(f-1)/2)*26}" cy="58" r="10" class="f-paper s-ink" stroke-width="2.5"/>`;
+    for(let i=0;i<m;i++) s+=`<circle cx="${cx+(i-(m-1)/2)*26}" cy="${yM+14}" r="10" class="f-paper s-ink" stroke-width="2.5"/>`;
+    for(let i=0;i<n;i++) s+=kBadge(xs(i),(72+yM)/2,i+1);
+    s+=kLoad(cx,yM+28)+kHand(tx,yh,'down',F);
+  }
+  $('#ka-svg').innerHTML=s;
+  const h=KA.p/100*22, sd=n*h;
+  $('#ka-pv').textContent=KA.p+'%';
+  $('#ka-chip').textContent='Beban naik '+fmt(h,0)+' cm';
+  $('#ka-ro').innerHTML=
+    `<div><dt>Tali penopang</dt><dd>${n}</dd></div>`+
+    `<div><dt>Gaya tarik</dt><dd>${fmt(F,0)} N</dd></div>`+
+    `<div><dt>Tali ditarik</dt><dd>${fmt(sd,0)} cm</dd></div>`;
+  $('#ka-note').textContent=T.note;
+}
+$('#ka-type').innerHTML=KT.map((k,i)=>`<button class="ktype" data-t="${i}" aria-pressed="${i===0}"><div class="pic">${pic(k.pic)}</div><b>${k.name}</b><small>${k.ex}</small></button>`).join('');
+$$('#ka-type button').forEach(b=>b.addEventListener('click',()=>{
+  KA.t=+b.dataset.t; KA.seen.add(KA.t);
+  $$('#ka-type button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  if(KA.seen.size>=KT.length) mark('katrol');
+  kDraw();
+}));
+$('#ka-p').addEventListener('input',e=>{KA.p=+e.target.value;kDraw();});
+$('#ka-auto').addEventListener('click',()=>{
+  if(KA.busy) return;
+  if(reduce){KA.p=100;$('#ka-p').value=100;kDraw();return;}
+  KA.busy=true; const t0=performance.now();
+  (function step(now){
+    const p=clamp((now-t0)/2200,0,1);
+    KA.p=Math.round(p*100); $('#ka-p').value=KA.p; kDraw();
+    if(p<1) requestAnimationFrame(step); else KA.busy=false;
+  })(t0);
+});
+/* seret tangan langsung pada gambar */
+let kDrag=null;
+const kSvg=$('#ka-svg');
+kSvg.addEventListener('pointerdown',e=>{
+  if(!e.target.closest('.khand')) return;
+  const n=KT[KA.t].n, m=kSvg.getScreenCTM();
+  kDrag={y:e.clientY,p:KA.p,k:m?m.d:1,dir:n===2?-1:1,n};
+  try{kSvg.setPointerCapture(e.pointerId);}catch(err){}
+  e.preventDefault();
+});
+kSvg.addEventListener('pointermove',e=>{
+  if(!kDrag) return;
+  const dy=(e.clientY-kDrag.y)/kDrag.k;
+  KA.p=Math.round(clamp(kDrag.p+kDrag.dir*dy/(kDrag.n*44)*100,0,100));
+  $('#ka-p').value=KA.p; kDraw();
+});
+['pointerup','pointercancel'].forEach(ev=>kSvg.addEventListener(ev,()=>{kDrag=null;}));
+kDraw();
+
+/* ---------- Kuis ---------- */
+const QZ=[
+  {t:'Konsep',q:'Pernyataan mana yang paling tepat tentang pesawat sederhana?',o:['Alat yang mengurangi besar usaha','Alat sederhana yang memudahkan pekerjaan dengan mengubah besar gaya, arah gaya, atau jarak','Mesin yang menghasilkan energi sendiri','Alat yang hanya bekerja dengan listrik'],a:1,w:'Pesawat sederhana tidak mengurangi usaha. Usaha = gaya × jarak tetap, tetapi gaya, arah, atau jaraknya bisa diatur.'},
+  {t:'Konsep',q:'Dengan papan miring, gaya dorong menjadi 4 kali lebih kecil. Apa akibatnya?',o:['Usaha menjadi 4 kali lebih kecil','Jarak yang ditempuh menjadi 4 kali lebih panjang','Berat beban menjadi lebih ringan','Waktu menjadi 4 kali lebih singkat'],a:1,w:'Usaha tetap. Gaya 4 kali lebih kecil berarti jarak 4 kali lebih panjang.'},
+  {t:'Tuas',q:'Pada pemecah kemiri, kemiri berada di antara engsel dan ujung tangkai. Pemecah kemiri termasuk tuas jenis ke...',o:['1','2','3','Bukan tuas'],a:1,w:'Beban (kemiri) berada di antara titik tumpu (engsel) dan kuasa (tangan), itu ciri tuas jenis 2.'},
+  {t:'Tuas',q:'Pada tuas jenis 3 seperti pinset, keuntungan mekanisnya...',o:['lebih dari 1','sama dengan 1','kurang dari 1','selalu 2'],a:2,w:'Lengan kuasa lebih pendek dari lengan beban, sehingga KM kurang dari 1. Gaya lebih besar, tetapi ujung bergerak lebih jauh dan teliti.'},
+  {t:'Tuas',q:'Beban 300 N berada 20 cm dari titik tumpu. Kuasa berada 60 cm dari titik tumpu. Berapa gaya kuasa agar seimbang?',o:['100 N','900 N','150 N','360 N'],a:0,w:'F = (W × lengan beban) ÷ lengan kuasa = (300 × 20) ÷ 60 = 100 N.'},
+  {t:'Bidang miring',q:'Peti 800 N dinaikkan setinggi 1 m dengan papan miring sepanjang 4 m (gesekan diabaikan). Gaya yang diperlukan...',o:['200 N','3.200 N','800 N','400 N'],a:0,w:'F = (W × h) ÷ s = (800 × 1) ÷ 4 = 200 N. KM = 4.'},
+  {t:'Bidang miring',q:'Mengapa jalan di daerah pegunungan dibuat berkelok-kelok?',o:['Agar usaha kendaraan menjadi lebih besar','Agar lintasan lebih panjang sehingga tanjakan lebih landai dan gaya lebih kecil','Agar gunung menjadi lebih rendah','Agar kendaraan lebih cepat sampai'],a:1,w:'Lintasan yang lebih panjang membuat bidang miring lebih landai, sehingga gaya yang diperlukan kendaraan lebih kecil.'},
+  {t:'Katrol',q:'Fungsi utama katrol tetap adalah...',o:['Mengubah arah gaya','Memperkecil gaya menjadi setengah','Memperbesar gaya 2 kali','Mengurangi usaha'],a:0,w:'Katrol tetap memiliki KM = 1. Gaya sama dengan berat beban, tetapi arah tarikan berubah.'},
+  {t:'Katrol',q:'Sebuah takal memiliki 4 tali yang menopang beban 240 N. Gaya tarik minimal...',o:['60 N','960 N','240 N','120 N'],a:0,w:'KM = jumlah tali penopang = 4. F = 240 ÷ 4 = 60 N.'},
+  {t:'Katrol',q:'Beban dinaikkan 0,5 m dengan takal ber-KM 4. Panjang tali yang harus ditarik...',o:['0,125 m','0,5 m','1 m','2 m'],a:3,w:'Jarak tarik = KM × tinggi = 4 × 0,5 m = 2 m.'}
+];
+const TOPICS=['Konsep','Tuas','Bidang miring','Katrol'];
+let qs=[],qi=0,qans=[],qmode='intro',qpick=-1;
+const FORM={nama:'',kelas:'',r:{menarik:0,paham:0,bantu:0},fav:'',saran:'',status:'idle',attempt:0,tsv:'',err:'',id:'',unconf:false};
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const FAV=['Situasi longsor','Angkat bantuan','Tuas','Bidang miring','Katrol','Kuis'];
+const RATES=[['menarik','Seberapa menarik media ini?'],['paham','Seberapa mudah dipahami?'],['bantu','Seberapa membantu kamu memahami pesawat sederhana?']];
+function qPayload(){
+  const per=t=>qs.reduce((n,q,i)=>n+((q.t===t&&qans[i]&&qans[i].ok)?1:0),0);
+  if(!FORM.id) FORM.id=Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+  return {id:FORM.id,nama:FORM.nama.trim(),kelas:FORM.kelas.trim(),percobaan:FORM.attempt,
+    skor:qans.filter(x=>x&&x.ok).length,total:qs.length,
+    konsep:per('Konsep'),tuas:per('Tuas'),miring:per('Bidang miring'),katrol:per('Katrol'),
+    jawaban:qans.map((a,i)=>(i+1)+(a&&a.ok?'B':'S')).join(' '),
+    menarik:FORM.r.menarik||'',paham:FORM.r.paham||'',bantu:FORM.r.bantu||'',
+    favorit:FORM.fav,saran:FORM.saran.trim().slice(0,300)};
+}
+const qTsv=p=>[p.nama,p.kelas,p.percobaan,p.skor,p.total,p.konsep,p.tuas,p.miring,p.katrol,p.jawaban,p.menarik,p.paham,p.bantu,p.favorit,p.saran].map(v=>{const t=String(v).replace(/[\t\r\n]+/g,' ');return /^[=+\-@]/.test(t)?"'"+t:t;}).join('\t');
+function sendBox(){
+  const rate=RATES.map(([k,t])=>`<div class="rate" role="group" aria-labelledby="rl-${k}"><div class="lbl" id="rl-${k}">${t}</div><div class="rate-b">${[1,2,3,4,5].map(v=>`<button type="button" data-act="qrate" data-k="${k}" data-v="${v}" aria-pressed="${FORM.r[k]===v}">${v}</button>`).join('')}</div><div class="rate-l"><span>Kurang</span><span>Sangat</span></div></div>`).join('');
+  return `<section class="sendbox" aria-labelledby="sb-h"><h2 id="sb-h">Kirim hasil ke guru</h2>`+
+    `<div class="f2"><div class="field"><label for="qf-nama">Nama</label><input id="qf-nama" class="in" autocomplete="name" value="${esc(FORM.nama)}"></div>`+
+    `<div class="field"><label for="qf-kelas">Kelas</label><input id="qf-kelas" class="in" placeholder="Contoh: VIII A" value="${esc(FORM.kelas)}"></div></div>`+
+    `<h3>Pendapatmu tentang media ini <span class="muted" style="font-weight:400">(boleh dilewati)</span></h3>${rate}`+
+    `<div class="field"><label for="qf-fav">Bagian yang paling kamu suka</label><select id="qf-fav" class="in"><option value="">Pilih bagian</option>${FAV.map(f=>`<option${FORM.fav===f?' selected':''}>${f}</option>`).join('')}</select></div>`+
+    `<div class="field"><label for="qf-saran">Kesan atau saran</label><textarea id="qf-saran" class="in" maxlength="300">${esc(FORM.saran)}</textarea></div>`+
+    `<div class="seg"><button class="btn primary" id="qf-send" data-act="qsend">Kirim ke guru</button></div>`+
+    `<p class="fb" id="qf-status" aria-live="polite"></p>`+
+    `<div id="qf-manual" hidden><textarea id="qf-tsv" class="in mono" readonly rows="3" aria-label="Baris hasil untuk ditempel ke Google Sheet"></textarea><div class="seg" style="margin-top:.5rem"><button class="btn" data-act="qcopy">Salin hasil</button></div></div>`+
+    `<p class="cap">Nama, kelas, skor, dan pendapatmu dikirim ke Google Sheet milik gurumu.</p></section>`;
+}
+function qfUpdate(){
+  const st=$('#qf-status'),btn=$('#qf-send'),man=$('#qf-manual'); if(!st) return;
+  const S=FORM.status; st.className='fb';
+  btn.disabled=(S==='sending'||S==='sent');
+  btn.textContent=S==='fail'?'Kirim ulang':'Kirim ke guru';
+  man.hidden=!(S==='manual'||S==='fail');
+  if(S==='sending') st.textContent='Mengirim...';
+  else if(S==='sent'){ st.className='fb ok'; st.textContent='Terkirim. Terima kasih, '+FORM.nama.trim()+'!'+(FORM.unconf?' (belum terkonfirmasi oleh Sheet)':''); }
+  else if(S==='fail'){ st.className='fb bad'; st.textContent='Belum terkirim. Coba lagi, atau salin hasil di bawah. Rincian: '+(FORM.err||'-'); }
+  else if(S==='manual'){ st.className='fb bad'; st.textContent='Halaman ini belum tersambung ke Google Sheet guru. Salin hasil di bawah dan tempel ke Sheet, atau tunjukkan ke guru.'; }
+  else if(S==='invalid'){ st.className='fb bad'; st.textContent='Isi nama dan kelas dulu.'; }
+  else st.textContent='';
+  if(!man.hidden) $('#qf-tsv').value=FORM.tsv;
+}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function qStart(){
+  qs=QZ.map(q=>{const idx=shuffle(q.o.map((_,i)=>i));return {t:q.t,q:q.q,w:q.w,o:idx.map(i=>q.o[i]),a:idx.indexOf(q.a)};});
+  qi=0;qans=[];qpick=-1;qmode='q';
+  FORM.attempt++;FORM.status='idle';FORM.err='';FORM.id='';FORM.unconf=false;FORM.r={menarik:0,paham:0,bantu:0};FORM.fav='';FORM.saran='';FORM.tsv='';
+  qRender();
+}
+function qRender(){
+  const box=$('#qz');
+  if(qmode==='intro'){
+    box.innerHTML=`<p style="max-width:65ch">10 soal. Setiap jawaban langsung dibahas. Rumus:</p>`+
+      `<div class="scroll-x"><table><thead><tr><th>Pesawat</th><th>Keuntungan mekanis (KM)</th><th>Rumus gaya</th></tr></thead><tbody>`+
+      `<tr><td>Tuas</td><td class="mono">lengan kuasa ÷ lengan beban</td><td class="mono">F = W × lb ÷ lk</td></tr>`+
+      `<tr><td>Bidang miring</td><td class="mono">panjang ÷ tinggi</td><td class="mono">F = W × h ÷ s</td></tr>`+
+      `<tr><td>Katrol</td><td class="mono">jumlah tali penopang</td><td class="mono">F = W ÷ n</td></tr></tbody></table></div>`+
+      `<div class="seg"><button class="btn primary" data-act="qstart" data-fk="qs">Mulai kuis</button></div>`;
+    return;
+  }
+  if(qmode==='end'){
+    const sc=qans.filter(x=>x.ok).length;
+    const by=TOPICS.map(t=>{const l=qs.map((q,i)=>[q,qans[i]]).filter(([q])=>q.t===t);return {t,n:l.length,c:l.filter(([,a])=>a&&a.ok).length};});
+    const weak=by.filter(b=>b.c<b.n).map(b=>b.t);
+    const msg=sc>=9?'Sangat baik. Konsepmu sudah kuat.':sc>=7?'Baik. Perkuat sedikit bagian yang masih salah.':'Ulangi simulasi pada bagian yang masih salah, lalu coba kuis lagi.';
+    box.innerHTML=`<div class="qend"><div class="qe-a"><div><div class="eyebrow">Skor akhir</div><div class="score">${sc} / ${qs.length}</div><p>${msg}</p></div>`+
+      `<div class="rec">${by.map(b=>`<div class="rec-r"><span>${b.t}</span><div class="bar"><i class="${b.c===b.n?'ok':'bad'}" style="width:${b.c/b.n*100}%"></i></div><b class="mono">${b.c}/${b.n}</b></div>`).join('')}</div>`+
+      (weak.length?`<p class="cap">Perlu diulang: ${weak.join(', ')}.</p>`:'')+`</div>`+
+      `<div class="qe-b">${sendBox()}</div>`+
+      `<div class="qe-c"><div><h3>Pembahasan soal yang salah</h3><ul class="fblist" style="margin-top:.5rem">${qs.map((q,i)=>qans[i].ok?'':`<li><b>${i+1}. ${q.q}</b><br>Jawaban benar: ${q.o[q.a]}. ${q.w}</li>`).join('')||'<li class="ok">Semua soal benar.</li>'}</ul></div>`+
+      `<div class="seg"><button class="btn primary" data-act="qstart" data-fk="qs">Ulangi kuis</button></div></div></div>`;
+    qfUpdate();
+    return;
+  }
+  const q=qs[qi], ans=qans[qi], answered=!!ans;
+  const prog=qs.map((_,i)=>`<i class="${qans[i]?(qans[i].ok?'ok':'bad'):i===qi?'now':''}"></i>`).join('');
+  box.innerHTML=`<div class="qprog" aria-hidden="true">${prog}</div>`+
+    `<div class="sub"><span class="chip info">${q.t}</span><span class="cap">Soal ${qi+1} dari ${qs.length}</span></div>`+
+    `<h2 style="font-weight:500">${q.q}</h2>`+
+    `<div class="qopts">${q.o.map((o,i)=>{let c='';if(answered){if(i===q.a)c=' ok';else if(i===ans.pick)c=' bad';}return `<button class="qo${c}" data-act="qpick" data-i="${i}"${answered?' disabled':''}>${o}</button>`;}).join('')}</div>`+
+    (answered?`<p class="fb ${ans.ok?'ok':'bad'}" aria-live="polite"><b>${ans.ok?'Benar.':'Belum tepat.'}</b> ${q.w}</p><div class="seg"><button class="btn primary" data-act="qnext" data-fk="qn">${qi<qs.length-1?'Soal berikutnya':'Lihat skor'}</button></div>`:'');
+}
+ACT.qstart=()=>qStart();
+ACT.qpick=t=>{ if(qans[qi]) return; const i=+t.dataset.i; qans[qi]={pick:i,ok:i===qs[qi].a}; qRender(); const n=$('[data-fk="qn"]'); if(n) n.focus(); };
+ACT.qrate=t=>{
+  const k=t.dataset.k,v=+t.dataset.v; FORM.r[k]=(FORM.r[k]===v)?0:v;
+  $$('[data-act="qrate"][data-k="'+k+'"]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===FORM.r[k])));
+};
+ACT.qsend=async()=>{
+  if(FORM.status==='sending'||FORM.status==='sent') return;
+  const okN=FORM.nama.trim().length>=2;
+  if(!okN||!FORM.kelas.trim()){ FORM.status='invalid'; qfUpdate(); const f=$(okN?'#qf-kelas':'#qf-nama'); if(f) f.focus(); return; }
+  const p=qPayload(); FORM.tsv=qTsv(p);
+  if(!SHEET_URL){ FORM.status='manual'; qfUpdate(); return; }
+  FORM.status='sending'; qfUpdate();
+  const body=JSON.stringify(p);
+  FORM.unconf=false; FORM.err='';
+  let done=false;
+  /* 1) kirim dan baca balasan Google, agar tahu data benar-benar masuk */
+  try{
+    const r=await fetch(SHEET_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:body});
+    const txt=await r.text(); let j=null; try{ j=JSON.parse(txt); }catch(e1){}
+    if(j&&j.ok){ FORM.status='sent'; done=true; }
+    else{ FORM.status='fail'; done=true; FORM.err='Balasan Google: '+(j?(j.galat||'ok=false'):txt.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').slice(0,140)); }
+  }catch(err){
+    /* 2) balasan tidak terbaca: kirim ulang tanpa membaca balasan (id yang sama, tidak ganda) */
+    try{ await fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:body}); FORM.status='sent'; FORM.unconf=true; done=true; }
+    catch(err2){
+      let ok=false;
+      try{ ok=!!(navigator.sendBeacon&&navigator.sendBeacon(SHEET_URL,new Blob([body],{type:'text/plain;charset=utf-8'}))); }catch(e2){}
+      if(ok){ FORM.status='sent'; FORM.unconf=true; }
+      else{ FORM.status='fail'; FORM.err=((err2&&err2.name)||'Galat')+': '+((err2&&err2.message)||'-')+' | halaman: '+location.protocol+'//'+(location.host||'(file lokal)'); }
+    }
+  }
+  qfUpdate();
+};
+ACT.qcopy=async t=>{
+  const a=$('#qf-tsv'); if(!a) return;
+  try{ await navigator.clipboard.writeText(a.value); t.textContent='Tersalin'; setTimeout(()=>{t.textContent='Salin hasil';},2000); }
+  catch(err){ a.focus(); a.select(); }
+};
+ACT.qnext=()=>{ if(qi<qs.length-1){qi++;} else {qmode='end';mark('kuis');} qRender(); };
+['input','change'].forEach(ev=>$('#qz').addEventListener(ev,e=>{
+  const id=e.target.id;
+  if(id==='qf-nama') FORM.nama=e.target.value; else if(id==='qf-kelas') FORM.kelas=e.target.value;
+  else if(id==='qf-saran') FORM.saran=e.target.value; else if(id==='qf-fav') FORM.fav=e.target.value; else return;
+  if(FORM.status==='invalid'){ FORM.status='idle'; qfUpdate(); }
+}));
+qRender();
+
+function setHd(){ const h=$('.hd'); if(h) document.documentElement.style.setProperty('--hd',h.offsetHeight+'px'); }
+setHd(); window.addEventListener('resize',setHd);
+renderTabs();
+fromHash();
+})();
+</script>
